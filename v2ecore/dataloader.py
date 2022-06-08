@@ -43,8 +43,7 @@ class Frames(data.Dataset):
         self.array = array
         self.transform = transform
         self.origDim = array.shape[2], array.shape[1]
-        self.dim = (int(self.origDim[0] / 32) * 32,
-                    int(self.origDim[1] / 32) * 32)
+        self.dim = (int(self.origDim[0] / 32) * 32, int(self.origDim[1] / 32) * 32)
 
     def __getitem__(self, index):
 
@@ -89,13 +88,12 @@ class Frames(data.Dataset):
             @Return: str.
         """
 
-        fmt_str = 'Dataset ' + self.__class__.__name__ + '\n'
-        fmt_str += '    Number of datapoints: {}\n'.format(self.__len__())
-        tmp = '    Transforms (if any): '
-        fmt_str += '{0}{1}\n'.format(
-            tmp,
-            self.transform.__repr__().replace('\n',
-                                              '\n' + ' ' * len(tmp)))
+        fmt_str = "Dataset " + self.__class__.__name__ + "\n"
+        fmt_str += "    Number of datapoints: {}\n".format(self.__len__())
+        tmp = "    Transforms (if any): "
+        fmt_str += "{0}{1}\n".format(
+            tmp, self.transform.__repr__().replace("\n", "\n" + " " * len(tmp))
+        )
         return fmt_str
 
 
@@ -114,13 +112,12 @@ class FramesDirectory(data.Dataset):
                 transform: Compose object.
         """
 
-        self.files = sorted(glob.glob("{}".format(folder_path)+parsing))
+        self.files = sorted(glob.glob("{}".format(folder_path) + parsing))
 
         self.transform = transform
         self.origDim = ori_dim
         #  self.origDim = array.shape[2], array.shape[1]
-        self.dim = (int(self.origDim[0] / 32) * 32,
-                    int(self.origDim[1] / 32) * 32)
+        self.dim = (int(self.origDim[0] / 32) * 32, int(self.origDim[1] / 32) * 32)
 
     def __getitem__(self, index):
 
@@ -134,7 +131,7 @@ class FramesDirectory(data.Dataset):
         sample = []
 
         image_1 = np.load(self.files[index])
-        image_2 = np.load(self.files[index+1])
+        image_2 = np.load(self.files[index + 1])
         # Loop over for all frames corresponding to the `index`.
         for image in [image_1, image_2]:
             # Open image using pil.
@@ -161,7 +158,7 @@ class FramesDirectory(data.Dataset):
         # ??? why is array 1 less than number of images?
         # Is it to avoid double processing the last frame of batch?
         # No, because we need to read a pair of image
-        return len(self.files)-1
+        return len(self.files) - 1
 
     def __repr__(self):
 
@@ -169,11 +166,10 @@ class FramesDirectory(data.Dataset):
             @Return: str.
         """
 
-        fmt_str = 'Dataset ' + self.__class__.__name__ + '\n'
-        fmt_str += '    Number of datapoints: {}\n'.format(self.__len__())
-        tmp = '    Transforms (if any): '
-        fmt_str += '{0}{1}\n'.format(
-            tmp,
-            self.transform.__repr__().replace('\n',
-                                              '\n' + ' ' * len(tmp)))
+        fmt_str = "Dataset " + self.__class__.__name__ + "\n"
+        fmt_str += "    Number of datapoints: {}\n".format(self.__len__())
+        tmp = "    Transforms (if any): "
+        fmt_str += "{0}{1}\n".format(
+            tmp, self.transform.__repr__().replace("\n", "\n" + " " * len(tmp))
+        )
         return fmt_str
