@@ -1,15 +1,15 @@
 """Use a static frame, and only generate leak events."""
-
 import os
-import torch
+
 import cv2
+import torch
 
 from v2ecore.emulator import EventEmulator
 
 # disable torch grad
 torch.set_grad_enabled(False)
 
-torch_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+torch_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 output_width, output_height = 346, 260
 
@@ -28,20 +28,19 @@ emulator = EventEmulator(
     output_folder=os.path.join(os.environ["HOME"], "data"),
     dvs_aedat2="full_featured_emulation.aedat",
     output_width=output_width,
-    output_height=output_height
+    output_height=output_height,
 )
 
 # static video stats
 fps = 500
-delta_t = 1/fps
+delta_t = 1 / fps
 
 emulation_time_in_sec = 120
-emulation_cycles = int(emulation_time_in_sec//delta_t)
+emulation_cycles = int(emulation_time_in_sec // delta_t)
 current_time = 0
 
 # load data
-img = cv2.imread(os.path.join(
-    os.environ["HOME"], "data", "lena.jpg"))
+img = cv2.imread(os.path.join(os.environ["HOME"], "data", "lena.jpg"))
 
 # resize and convert
 img = cv2.resize(img, dsize=(output_width, output_height))

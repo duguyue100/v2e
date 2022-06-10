@@ -15,8 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def lin_log(x, threshold=20):
-    """
-    linear mapping + logarithmic mapping.
+    """linear mapping + logarithmic mapping.
 
     :param x: float or ndarray
         the input linear value in range 0-255 TODO assumes 8 bit
@@ -47,8 +46,8 @@ def lin_log(x, threshold=20):
 def rescale_intensity_frame(new_frame):
     """Rescale intensity frames.
 
-    make sure we get no zero time constants
-    limit max time constant to ~1/10 of white intensity level
+    make sure we get no zero time constants limit max time constant to ~1/10 of white
+    intensity level
     """
     return (new_frame + 20) / 275.0
 
@@ -126,8 +125,8 @@ def subtract_leak_current(
 def compute_event_map(diff_frame, pos_thres, neg_thres):
     """Compute event map.
 
-    Prepare positive and negative event frames that later will be used
-    for generating events.
+    Prepare positive and negative event frames that later will be used for generating
+    events.
     """
     # extract positive and negative differences
     pos_frame = F.relu(diff_frame)
@@ -162,10 +161,11 @@ def compute_event_map(diff_frame, pos_thres, neg_thres):
 def compute_photoreceptor_noise_voltage(
     shot_noise_rate_hz, f3db, sample_rate_hz, pos_thr, neg_thr, sigma_thr
 ) -> float:
-    """
-     Computes the necessary photoreceptor noise voltage to result in obseved shot noise rate at low light intensity.
-     This computation relies on the known f3dB photoreceptor lowpass filter cutoff frequency and the known (nominal) event threshold.
-     emulator.py injects Gaussian distributed noise to the photoreceptor that should in principle generate the desired shot noise events.
+    """Computes the necessary photoreceptor noise voltage to result in obseved shot
+    noise rate at low light intensity. This computation relies on the known f3dB
+    photoreceptor lowpass filter cutoff frequency and the known (nominal) event
+    threshold. emulator.py injects Gaussian distributed noise to the photoreceptor that
+    should in principle generate the desired shot noise events.
 
      See the file media/noise_event_rate_simulation.xlsx for the simulation data and curve fit.
 
@@ -195,8 +195,8 @@ def compute_photoreceptor_noise_voltage(
         # x = log10(Rn/f3db)
         # see the plot Fig. 3 from Graca, Rui, and Tobi Delbruck. 2021. “Unraveling the Paradox of Intensity-Dependent DVS Pixel Noise.” arXiv [eess.SY]. arXiv. http://arxiv.org/abs/2109.08640.
         # the fit is computed in media/noise_event_rate_simulation.xlsx spreadsheet
-        y = -0.0026 * x ** 3 - 0.036 * x ** 2 - 0.1949 * x + 0.321
-        thr_per_vn = 10 ** y  # to get thr/vn
+        y = -0.0026 * x**3 - 0.036 * x**2 - 0.1949 * x + 0.321
+        thr_per_vn = 10**y  # to get thr/vn
         vn = (
             thr / thr_per_vn
         )  # compute necessary vn to give us this noise rate per pixel at this pixel bandwidth
@@ -310,9 +310,7 @@ def generate_shot_noise(
     pos_thres_pre_prob,
     neg_thres_pre_prob,
 ):
-    """Generate shot noise.
-
-    """
+    """Generate shot noise."""
     # new shot noise generator, generate for the entire batch
     shot_noise_factor = ((shot_noise_rate_hz / 2) * delta_time / num_iters) * (
         (shot_noise_inten_factor - 1) * inten01 + 1

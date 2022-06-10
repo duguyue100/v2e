@@ -528,3 +528,17 @@ An example of this conversion and comparison is on the [v2e home page](https://s
 ## Technical Details ##
 
 See the [v2e home page](https://sites.google.com/view/video2events/home).
+
+## Development guide
+
+To ensure a robust development, we enforce `pre-commit` hooks before each push
+
+Install `pre-commit` hooks:
+```bash
+pre-commit install && pre-commit install -t pre-push
+```
+
+Run hooks before push
+```bash
+pre-commit run --all-files
+```

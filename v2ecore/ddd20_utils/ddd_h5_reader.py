@@ -1,36 +1,36 @@
-"""
-Reads DDD hdf5 dvs data and return aps frames + events.
+"""Reads DDD hdf5 dvs data and return aps frames + events.
+
 @author: Zhe He, Tobi Delbruck
 @contact:hezhehz@live.cn, tobi@ini.uzh.ch
 @latest update: 2019-May-31
 """
 import ctypes
+import logging
+import multiprocessing as mp
 import queue as queue
 import time
-import numpy as np
-import logging
+
 import h5py
+import numpy as np
 from tqdm import tqdm
-import multiprocessing as mp
-from v2ecore.ddd20_utils.datasets import CHUNK_SIZE
-from v2ecore.ddd20_interfaces.caer import unpack_data
+
 from v2ecore.ddd20_interfaces import caer
+from v2ecore.ddd20_interfaces.caer import unpack_data
+from v2ecore.ddd20_utils.datasets import CHUNK_SIZE
 
 logger = logging.getLogger(__name__)
 
 
 class DDD20SimpleReader(object):
-    """
-    Simple reader with no multiprocessing threads to read in DDD recording and
-    extract data
-    """
+    """Simple reader with no multiprocessing threads to read in DDD recording and
+    extract data."""
 
     ETYPE_DVS = "polarity_event"
     ETYPE_APS = "frame_event"
     ETYPE_IMU = "imu6_event"
 
     def __init__(self, fname, rotate180=True):
-        """Init
+        """Init.
 
         Parameters
         ----------
@@ -247,8 +247,8 @@ class DDD20SimpleReader(object):
 
 
 class DDD20ReaderMultiProcessing(object):
-    """
-    Read aps frames and events from hdf5 files in DDD
+    """Read aps frames and events from hdf5 files in DDD.
+
     @author: Zhe He
     @contact: hezhehz@live.cn
     @latest update: 2019-May-31
@@ -257,7 +257,7 @@ class DDD20ReaderMultiProcessing(object):
     def __init__(
         self, fname, startTimeS=None, stopTimeS=None
     ):  # todo add rotate180 to mp reader
-        """Init
+        """Init.
 
         Parameters
         ----------
@@ -275,8 +275,7 @@ class DDD20ReaderMultiProcessing(object):
         self.m.search(self.start)
 
     def readEntire(self):
-        """
-        Read entire file to memory.
+        """Read entire file to memory.
 
         Returns
         frames, events
@@ -347,10 +346,7 @@ class DDD20ReaderMultiProcessing(object):
 
 
 def filter_frame(d):
-    """
-    receives 16 bit frame,
-    needs to return unsigned 8 bit img
-    """
+    """receives 16 bit frame, needs to return unsigned 8 bit img."""
     # add custom filters here...
     # d['data'] = my_filter(d['data'])
     frame8 = (d["data"] / 256).astype(np.uint8)
@@ -438,7 +434,7 @@ class HDF5Stream(mp.Process):
             self.ind_stop[k] = b
 
     def init_search(self, t):
-        """ start streaming from given time point """
+        """start streaming from given time point."""
         if self.run_search.is_set():
             return
         self.skip_to.value = np.uint64(t)
@@ -454,7 +450,7 @@ class HDF5Stream(mp.Process):
         self.run_search.clear()
 
     def _bsearch_by_timestamp(self, k, t):
-        """performs binary search on timestamp, returns closest block index"""
+        """performs binary search on timestamp, returns closest block index."""
         l, r = 0, self.ind_stop[k]
         print("searching", k, t)
         while True:
@@ -468,7 +464,7 @@ class HDF5Stream(mp.Process):
 
 
 class MergedStream(mp.Process):
-    """ Unpacks and merges data from HDF5 stream """
+    """Unpacks and merges data from HDF5 stream."""
 
     def __init__(self, fbuf, bufsize=256):
         super(MergedStream, self).__init__()
@@ -534,7 +530,7 @@ class MergedStream(mp.Process):
             self._inc_current(k)
 
     def _inc_current(self, k):
-        """ get next event of given type and increment row pointer """
+        """get next event of given type and increment row pointer."""
         row = self.current_blk[k][self.i[k]]
         if k == "dvs":
             ts, d = caer_event_from_row(row)
@@ -580,10 +576,8 @@ class MergedStream(mp.Process):
 
 
 def caer_event_from_row(row):
-    """
-    Takes binary dvs data as input,
-    returns unpacked event data or False if event type does not exist.
-    """
+    """Takes binary dvs data as input, returns unpacked event data or False if event
+    type does not exist."""
     sys_ts, head, body = (v.tobytes() for v in row)
     if not sys_ts:
         # rows with 0 timestamp do not contain any data
@@ -594,7 +588,7 @@ def caer_event_from_row(row):
 
 
 def _flush_q(q):
-    """ flush queue """
+    """flush queue."""
     while True:
         try:
             q.get(timeout=1e-3)

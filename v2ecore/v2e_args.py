@@ -1,9 +1,9 @@
 import argparse
-import os
 import logging
+import os
 from pathlib import Path
-from v2ecore.emulator import EventEmulator
 
+from v2ecore.emulator import EventEmulator
 from v2ecore.renderer import ExposureMode
 
 logger = logging.getLogger(__name__)
@@ -44,9 +44,9 @@ class SmartFormatter(argparse.HelpFormatter):
 
 
 def tuple_type(strings):
-    """ From https://stackoverflow.com/questions/33564246/passing-a-tuple-as-command-line-argument
-    Allows passing tuple as argument and returning a tuple in the args.xxxx
-    """
+    """From https://stackoverflow.com/questions/33564246/passing-a-tuple-as-command-
+    line-argument Allows passing tuple as argument and returning a tuple in the
+    args.xxxx."""
     strings = strings.replace("(", "").replace(")", "")
     mapped_int = map(int, strings.split(","))
     return tuple(mapped_int)

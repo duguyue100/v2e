@@ -1,22 +1,23 @@
 # superclass for v2e synthetic input
-
 import argparse
 import atexit
-
-import numpy as np
-import cv2
 import os
-from tqdm import tqdm
-from v2ecore.v2e_utils import *
 import sys
-from typing import Tuple, Optional, List
+from typing import List
+from typing import Optional
+from typing import Tuple
+
+import cv2
+import numpy as np
+from tqdm import tqdm
+
+from v2ecore.v2e_utils import *
 
 logger = logging.getLogger(__name__)
 
 
 class base_synthetic_input:  # the class name should be the same as the filename, like in Java
-    """ Generates moving dots on linear trajectories
-    """
+    """Generates moving dots on linear trajectories."""
 
     BACKGROUND = 127  # defined as gray level of BACKGROUND of pix_arr
 
@@ -29,7 +30,7 @@ class base_synthetic_input:  # the class name should be the same as the filename
         args: Optional[List] = None,
         parent_args: Optional[argparse.Namespace] = None,
     ) -> None:
-        """ prototype constructor
+        """prototype constructor.
 
         :param width: width of frames in pixels
         :param height: height in pixels
@@ -75,7 +76,7 @@ class base_synthetic_input:  # the class name should be the same as the filename
         return 0
 
     def next_frame(self) -> Tuple[Optional[np.ndarray], float]:
-        """ Returns the next frame and its time, or None when finished
+        """Returns the next frame and its time, or None when finished.
 
         :returns: (frame, time)
             frame is a pix_arrary np.ndarray((self.height, self.w), dtype=np.uint8)
@@ -86,7 +87,8 @@ class base_synthetic_input:  # the class name should be the same as the filename
         return (self.pix_arr, self.time)
 
     def write_video_frame(self, frame=None):
-        """ writes the current self.pix_array to video output file as source frames
+        """writes the current self.pix_array to video output file as source frames.
+
         :param frame
             the frame, or None to write self.pix_arr
         :returns: None

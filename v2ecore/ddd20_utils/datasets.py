@@ -1,17 +1,19 @@
 from __future__ import print_function
-import h5py
-import numpy as np
-import time
+
 import multiprocessing as mp
 import queue
+import time
+
+import h5py
+import numpy as np
 
 SIZE_INC = 2048
 CHUNK_SIZE = 128
 
 
 class HDF5(mp.Process):
-    """
-    Creates a hdf5 file with datasets of specified types.
+    """Creates a hdf5 file with datasets of specified types.
+
     Provides an append method.
     """
 

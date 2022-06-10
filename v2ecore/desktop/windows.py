@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-
-"""
-Simple desktop window enumeration for Python.
+"""Simple desktop window enumeration for Python.
 
 Copyright (C) 2007, 2008, 2009 Paul Boddie <paul@boddie.org.uk>
 
@@ -41,9 +39,12 @@ child_windows = window.children()
 
 See the desktop.windows.Window class for more information.
 """
-
-from desktop import _is_x11, _get_x11_vars, _readfrom, use_desktop
 import re
+
+from desktop import _get_x11_vars
+from desktop import _is_x11
+from desktop import _readfrom
+from desktop import use_desktop
 
 # System functions.
 
@@ -54,7 +55,7 @@ def _xwininfo(identifier, action):
     else:
         args = "-id " + identifier
 
-    s = _readfrom(_get_x11_vars() + "xwininfo %s -%s" % (args, action), shell=1)
+    s = _readfrom(_get_x11_vars() + "xwininfo {} -{}".format(args, action), shell=1)
 
     # Return a mapping of keys to values for the "stats" action.
 
@@ -103,14 +104,14 @@ def find_by_name(name):
 
 class Window:
 
-    "A window on the desktop."
+    """A window on the desktop."""
 
     _name_pattern = re.compile(r":\s+\(.*?\)\s+[-0-9x+]+\s+[-0-9+]+$")
     _absent_names = "(has no name)", "(the root window) (has no name)"
 
     def __init__(self, identifier):
 
-        "Initialise the window with the given 'identifier'."
+        """Initialise the window with the given 'identifier'."""
 
         self.identifier = identifier
 
@@ -170,10 +171,10 @@ class Window:
 
     def children(self, all=0):
 
-        """
-        Return a list of windows which are children of this window. If the
-        optional 'all' parameter is set to a true value, all such windows will
-        be returned regardless of whether they have any name information.
+        """Return a list of windows which are children of this window.
+
+        If the optional 'all' parameter is set to a true value, all such windows will be
+        returned regardless of whether they have any name information.
         """
 
         s = _xwininfo(self.identifier, "children")
@@ -181,10 +182,10 @@ class Window:
 
     def descendants(self, all=0):
 
-        """
-        Return a list of windows which are descendants of this window. If the
-        optional 'all' parameter is set to a true value, all such windows will
-        be returned regardless of whether they have any name information.
+        """Return a list of windows which are descendants of this window.
+
+        If the optional 'all' parameter is set to a true value, all such windows will be
+        returned regardless of whether they have any name information.
         """
 
         s = _xwininfo(self.identifier, "tree")
@@ -192,17 +193,15 @@ class Window:
 
     def find(self, callable):
 
-        """
-        Return windows using the given 'callable' (returning a true or a false
-        value when invoked with a window name) for descendants of this window.
-        """
+        """Return windows using the given 'callable' (returning a true or a false value
+        when invoked with a window name) for descendants of this window."""
 
         s = _xwininfo(self.identifier, "tree")
         return self._descendants(s, callable)
 
     def name(self):
 
-        "Return the name of the window."
+        """Return the name of the window."""
 
         d = _xwininfo(self.identifier, "stats")
 
@@ -212,14 +211,14 @@ class Window:
 
     def size(self):
 
-        "Return a tuple containing the width and height of this window."
+        """Return a tuple containing the width and height of this window."""
 
         d = _xwininfo(self.identifier, "stats")
         return _get_int_properties(d, ["Width", "Height"])
 
     def position(self):
 
-        "Return a tuple containing the upper left co-ordinates of this window."
+        """Return a tuple containing the upper left co-ordinates of this window."""
 
         d = _xwininfo(self.identifier, "stats")
         return _get_int_properties(
@@ -228,17 +227,15 @@ class Window:
 
     def displayed(self):
 
-        """
-        Return whether the window is displayed in some way (but not necessarily
-        visible on the current screen).
-        """
+        """Return whether the window is displayed in some way (but not necessarily
+        visible on the current screen)."""
 
         d = _xwininfo(self.identifier, "stats")
         return d["Map State"] != "IsUnviewable"
 
     def visible(self):
 
-        "Return whether the window is displayed and visible."
+        """Return whether the window is displayed and visible."""
 
         d = _xwininfo(self.identifier, "stats")
         return d["Map State"] == "IsViewable"
@@ -246,10 +243,10 @@ class Window:
 
 def list(desktop=None):
 
-    """
-    Return a list of windows for the current desktop. If the optional 'desktop'
-    parameter is specified then attempt to use that particular desktop
-    environment's mechanisms to look for windows.
+    """Return a list of windows for the current desktop.
+
+    If the optional 'desktop' parameter is specified then attempt to use that particular
+    desktop environment's mechanisms to look for windows.
     """
 
     root_window = root(desktop)
@@ -260,10 +257,10 @@ def list(desktop=None):
 
 def root(desktop=None):
 
-    """
-    Return the root window for the current desktop. If the optional 'desktop'
-    parameter is specified then attempt to use that particular desktop
-    environment's mechanisms to look for windows.
+    """Return the root window for the current desktop.
+
+    If the optional 'desktop' parameter is specified then attempt to use that particular
+    desktop environment's mechanisms to look for windows.
     """
 
     # NOTE: The desktop parameter is currently ignored and X11 is tested for
@@ -277,10 +274,10 @@ def root(desktop=None):
 
 def find(callable, desktop=None):
 
-    """
-    Find and return windows using the given 'callable' for the current desktop.
-    If the optional 'desktop' parameter is specified then attempt to use that
-    particular desktop environment's mechanisms to look for windows.
+    """Find and return windows using the given 'callable' for the current desktop.
+
+    If the optional 'desktop' parameter is specified then attempt to use that particular
+    desktop environment's mechanisms to look for windows.
     """
 
     return root(desktop).find(callable)

@@ -1,43 +1,43 @@
-"""customized Pytorch dataloader
+"""customized Pytorch dataloader.
 
-    @author: Zhe He
-    @contact: zhehe@student.ethz.ch
-    @latest update: 2019-May-27th
+@author: Zhe He
+@contact: zhehe@student.ethz.ch
+@latest update: 2019-May-27th
 """
-import torch.utils.data as data
-
 import glob
+
 import numpy as np
+import torch.utils.data as data
 from PIL import Image
 
 
 class Frames(data.Dataset):
 
-    """
-        Load frames from an N-d array, and transform them into tensor.
-        @Author:
-            - Zhe He
-            - zhehe@student.ethz.ch
+    """Load frames from an N-d array, and transform them into tensor.
 
-        @Members:
-            array: N-d numpy array.
-            transform: Compose object.
+    @Author:
+        - Zhe He
+        - zhehe@student.ethz.ch
 
-        @Methods:
-            __getitem__: List(Tensor, Tensor)
-                return a pair of (frame0, frame1).
-            __len__: int
-                return the length of the dataset.
-            __repr__: str
-                return printable representation of the class.
+    @Members:
+        array: N-d numpy array.
+        transform: Compose object.
+
+    @Methods:
+        __getitem__: List(Tensor, Tensor)
+            return a pair of (frame0, frame1).
+        __len__: int
+            return the length of the dataset.
+        __repr__: str
+            return printable representation of the class.
     """
 
     def __init__(self, array, transform=None):
 
         """
-            @Parameters:
-                array: N-d numpy array.
-                transform: Compose object.
+        @Parameters:
+            array: N-d numpy array.
+            transform: Compose object.
         """
 
         self.array = array
@@ -49,9 +49,9 @@ class Frames(data.Dataset):
 
         """Return an item from the dataset.
 
-            @Parameter:
-                index: int.
-            @Return: List(Tensor, Tensor).
+        @Parameter:
+            index: int.
+        @Return: List(Tensor, Tensor).
         """
 
         sample = []
@@ -69,7 +69,8 @@ class Frames(data.Dataset):
     def __len__(self):
 
         """Return the size of the dataset.
-            @Return: int.
+
+        @Return: int.
         """
         # from SuperSloMo github: https://github.com/avinashpaliwal
         # /Super-SloMo/blob/a3be3dbc363f48f2cdaafc7224597dbd5a0d9370
@@ -85,13 +86,14 @@ class Frames(data.Dataset):
     def __repr__(self):
 
         """Return printable representations of the class.
-            @Return: str.
+
+        @Return: str.
         """
 
         fmt_str = "Dataset " + self.__class__.__name__ + "\n"
         fmt_str += "    Number of datapoints: {}\n".format(self.__len__())
         tmp = "    Transforms (if any): "
-        fmt_str += "{0}{1}\n".format(
+        fmt_str += "{}{}\n".format(
             tmp, self.transform.__repr__().replace("\n", "\n" + " " * len(tmp))
         )
         return fmt_str
@@ -99,17 +101,15 @@ class Frames(data.Dataset):
 
 class FramesDirectory(data.Dataset):
 
-    """
-        Load frames from a directory that has individual frame records,
-        and transform them into tensor.
-    """
+    """Load frames from a directory that has individual frame records, and transform
+    them into tensor."""
 
     def __init__(self, folder_path, ori_dim, parsing="/*.npy", transform=None):
 
         """
-            @Parameters:
-                array: N-d numpy array.
-                transform: Compose object.
+        @Parameters:
+            array: N-d numpy array.
+            transform: Compose object.
         """
 
         self.files = sorted(glob.glob("{}".format(folder_path) + parsing))
@@ -123,9 +123,9 @@ class FramesDirectory(data.Dataset):
 
         """Return an item from the dataset.
 
-            @Parameter:
-                index: int.
-            @Return: List(Tensor, Tensor).
+        @Parameter:
+            index: int.
+        @Return: List(Tensor, Tensor).
         """
 
         sample = []
@@ -146,7 +146,8 @@ class FramesDirectory(data.Dataset):
     def __len__(self):
 
         """Return the size of the dataset.
-            @Return: int.
+
+        @Return: int.
         """
         # from SuperSloMo github: https://github.com/avinashpaliwal
         # /Super-SloMo/blob/a3be3dbc363f48f2cdaafc7224597dbd5a0d9370
@@ -163,13 +164,14 @@ class FramesDirectory(data.Dataset):
     def __repr__(self):
 
         """Return printable representations of the class.
-            @Return: str.
+
+        @Return: str.
         """
 
         fmt_str = "Dataset " + self.__class__.__name__ + "\n"
         fmt_str += "    Number of datapoints: {}\n".format(self.__len__())
         tmp = "    Transforms (if any): "
-        fmt_str += "{0}{1}\n".format(
+        fmt_str += "{}{}\n".format(
             tmp, self.transform.__repr__().replace("\n", "\n" + " " * len(tmp))
         )
         return fmt_str

@@ -1,17 +1,22 @@
-import numpy as np
-import cv2
-import os
 import atexit
 import logging
-from tqdm import tqdm
-from typing import List
-from engineering_notation import EngNumber  # only from pip
+import os
 from enum import Enum
-from numba import jit, njit
+from typing import List
+
+import cv2
+import numpy as np
+from engineering_notation import EngNumber  # only from pip
+from numba import jit
+from numba import njit
+from tqdm import tqdm
 
 from v2ecore.emulator import EventEmulator
-from v2ecore.v2e_utils import video_writer, read_image, checkAddSuffix, v2e_quit
+from v2ecore.v2e_utils import checkAddSuffix
 from v2ecore.v2e_utils import hist2d_numba_seq
+from v2ecore.v2e_utils import read_image
+from v2ecore.v2e_utils import v2e_quit
+from v2ecore.v2e_utils import video_writer
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +29,7 @@ class ExposureMode(Enum):
 
 
 class EventRenderer(object):
-    """Class for DVS rendering from events.
-    and by generating DVS from image sequence.
+    """Class for DVS rendering from events. and by generating DVS from image sequence.
 
     It only defines the video and event dataset output path
     and whether to rotate the images.
@@ -48,7 +52,7 @@ class EventRenderer(object):
         frame_times_suffix="-frame_times.txt",
         avi_frame_rate=30,
     ):
-        """ Init.
+        """Init.
 
         Parameters
         ----------
@@ -135,7 +139,7 @@ class EventRenderer(object):
             cv2.destroyAllWindows()
 
     def _check_outputs_open(self):
-        """checks that output video and event datasets files are open"""
+        """checks that output video and event datasets files are open."""
 
         if self.video_output_file is not None:
             return
@@ -168,7 +172,7 @@ class EventRenderer(object):
     def render_events_to_frames(
         self, event_arr: np.ndarray, height: int, width: int, return_frames=False
     ) -> np.ndarray:
-        """ Incrementally render event frames.
+        """Incrementally render event frames.
 
         Frames are appended to the video output file.
         The current frame is held for the next packet to fill.

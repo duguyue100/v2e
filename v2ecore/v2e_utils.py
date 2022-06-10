@@ -1,16 +1,16 @@
+import glob
 import logging
 import os
 import sys
 import tempfile
-
-import numpy as np
-import cv2
-import glob
-import easygui
-from tkinter import filedialog
-from numba import njit
-from engineering_notation import EngNumber as eng
 from pathlib import Path
+from tkinter import filedialog
+
+import cv2
+import easygui
+import numpy as np
+from engineering_notation import EngNumber as eng
+from numba import njit
 
 # adjust for different sensor than DAVIS346
 DVS_WIDTH, DVS_HEIGHT = 346, 260
@@ -62,8 +62,7 @@ class ImageFolderReader(object):
         self.frame_channels = 1 if frame.ndim < 3 else frame.shape[2]
 
     def read(self, skip=False):
-        """
-        Reads the next frame
+        """Reads the next frame.
 
         :param skip: skip the frame
 
@@ -101,7 +100,9 @@ def v2e_quit(code=0):
 def make_output_folder(
     output_folder_base, suffix_counter, overwrite, unique_output_folder
 ) -> str:
-    """Makes the output folder if it does not exist yet, or makes unique new numbered folder
+    """Makes the output folder if it does not exist yet, or makes unique new numbered
+    folder.
+
     :param output_folder_base: the base name of folder. If it is absolute path, then make folder at absolute location, otherwise relative to startup folder
     :param suffix_counter: a counter value to append
     :param overwrite: to overwrite existing folder
@@ -209,9 +210,7 @@ def set_output_dimension(
 
 
 def check_lowpass(cutoffhz, fs, logger):
-    """ checks if cutoffhz is ok given sample rate fs
-
-    """
+    """checks if cutoffhz is ok given sample rate fs."""
     if cutoffhz == 0 or fs == 0:
         logger.info("lowpass filter is disabled, no need for check")
         return
@@ -299,7 +298,7 @@ def checkAddSuffix(path: str, suffix: str):
 def video_writer(
     output_path, height, width, frame_rate=30, fourcc=OUTPUT_VIDEO_CODEC_FOURCC
 ):
-    """ Return a video writer.
+    """Return a video writer.
 
     Parameters
     ----------
@@ -329,8 +328,8 @@ def video_writer(
 
 
 def all_images(data_path):
-    """Return path of all input images. Assume that the ascending order of
-    file names is the same as the order of time sequence.
+    """Return path of all input images. Assume that the ascending order of file names is
+    the same as the order of time sequence.
 
     Parameters
     ----------
@@ -344,9 +343,7 @@ def all_images(data_path):
     """
     images = glob.glob(os.path.join(data_path, "*.png"))
     if len(images) == 0:
-        raise ValueError(
-            ("Input folder is empty or images are not in" " 'png' format.")
-        )
+        raise ValueError("Input folder is empty or images are not in" " 'png' format.")
     images_sorted = sorted(
         images, key=lambda line: int(line.split(os.sep)[-1].split(".")[0])
     )
@@ -405,8 +402,8 @@ def read_aedat_txt_events(fname: str):
 
 
 def select_events_in_roi(events, x, y):
-    """ Select the events inside the region specified by x and y.
-    including the x and y values.
+    """Select the events inside the region specified by x and y. including the x and y
+    values.
 
     Parameters
     ----------
@@ -453,7 +450,7 @@ def select_events_in_roi(events, x, y):
 def histogram_events_in_time_bins(
     events, start=0, stop=3.5, time_bin_ms=50, polarity=None
 ):
-    """ Count the amount of events in each bin.
+    """Count the amount of events in each bin.
     Parameters
     ----------
     events: np.ndarray, [timestamp, x, y, polarity].

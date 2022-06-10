@@ -1,5 +1,5 @@
-"""
-DVS simulator.
+"""DVS simulator.
+
 Compute events from input frames.
 """
 import atexit
@@ -15,10 +15,8 @@ import numpy as np
 import torch  # https://pytorch.org/docs/stable/torch.html
 from screeninfo import get_monitors
 
-from v2ecore.emulator_utils import (
-    compute_event_map,
-    compute_photoreceptor_noise_voltage,
-)
+from v2ecore.emulator_utils import compute_event_map
+from v2ecore.emulator_utils import compute_photoreceptor_noise_voltage
 from v2ecore.emulator_utils import generate_shot_noise
 from v2ecore.emulator_utils import lin_log
 from v2ecore.emulator_utils import low_pass_filter
@@ -26,7 +24,9 @@ from v2ecore.emulator_utils import rescale_intensity_frame
 from v2ecore.emulator_utils import subtract_leak_current
 from v2ecore.output.ae_text_output import DVSTextOutput
 from v2ecore.output.aedat2_output import AEDat2Output
-from v2ecore.v2e_utils import checkAddSuffix, v2e_quit, video_writer
+from v2ecore.v2e_utils import checkAddSuffix
+from v2ecore.v2e_utils import v2e_quit
+from v2ecore.v2e_utils import video_writer
 
 # import rosbag # not yet for python 3
 
@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 class EventEmulator(object):
     """compute events based on the input frame.
+
     - author: Zhe He
     - contact: zhehe@student.ethz.ch
     """
@@ -229,9 +230,9 @@ class EventEmulator(object):
             self.cs_tau_h_ms = (
                 0
                 if (self.cs_tau_p_ms is None or self.cs_tau_p_ms == 0)
-                else self.cs_tau_p_ms / (self.cs_lambda_pixels ** 2)
+                else self.cs_tau_p_ms / (self.cs_lambda_pixels**2)
             )
-            lat_res = 1 / (self.cs_lambda_pixels ** 2)
+            lat_res = 1 / (self.cs_lambda_pixels**2)
             trans_cond = 1 / self.cs_lambda_pixels
             logger.debug(
                 f"lateral resistance R={lat_res:.2g}Ohm, transverse transconductance g={trans_cond:.2g} Siemens, Rg={(lat_res * trans_cond):.2f}"
@@ -495,8 +496,7 @@ class EventEmulator(object):
         )
 
     def reset(self):
-        """resets so that next use will reinitialize the base frame
-        """
+        """resets so that next use will reinitialize the base frame."""
         self.num_events_total = 0
         self.num_events_on = 0
         self.num_events_off = 0
@@ -948,7 +948,7 @@ class EventEmulator(object):
                 else self.cs_tau_p_ms * 1e-3
             )
             tau_h = (
-                abs_min_tau_p / (self.cs_lambda_pixels ** 2)
+                abs_min_tau_p / (self.cs_lambda_pixels**2)
                 if (self.cs_tau_h_ms is None or self.cs_tau_h_ms == 0)
                 else self.cs_tau_h_ms * 1e-3
             )

@@ -1,5 +1,4 @@
 #!/usr/bin/python
-
 """
 Recorder for DAVIS + OpenXC data
 Author: J. Binas <jbinas@gmail.com>, 2017
@@ -7,13 +6,15 @@ Author: J. Binas <jbinas@gmail.com>, 2017
 This software is released under the
 GNU LESSER GENERAL PUBLIC LICENSE Version 3.
 """
-
 from __future__ import print_function
-import time
-import numpy as np
-import socket, struct
+
 import multiprocessing as mp
 import queue
+import socket
+import struct
+import time
+
+import numpy as np
 
 HOST = "127.0.0.1"
 PORT = 7777
@@ -48,10 +49,7 @@ etype_by_id = {v: k for k, v in EVENT_TYPES.items()}
 
 
 def unpack_events(p, rotate180=True):
-    """
-    Extract events from binary data,
-    returns list of event tuples.
-    """
+    """Extract events from binary data, returns list of event tuples."""
     if not p["etype"] == "polarity_event":
         return False
     p_arr = np.fromstring(p["dvs_data"], dtype=np.uint32)
@@ -67,10 +65,7 @@ def unpack_events(p, rotate180=True):
 
 
 def unpack_header(header_raw):
-    """
-    Extract header info from binary data,
-    returns dict object.
-    """
+    """Extract header info from binary data, returns dict object."""
     vals = struct.unpack("hhiiiiii", header_raw)
     obj = dict(zip(HEADER_FIELDS, vals))
     obj["etype"] = etype_by_id.get(obj["etype"], obj["etype"])
@@ -78,9 +73,7 @@ def unpack_header(header_raw):
 
 
 def unpack_frame(p, rotate180=True):
-    """
-    Extract image from binary data, returns timestamp and 2d np.array.
-    """
+    """Extract image from binary data, returns timestamp and 2d np.array."""
     if not p["etype"] == "frame_event":
         return False
     img_head = np.fromstring(p["dvs_data"][:36], dtype=np.uint32)
@@ -92,9 +85,7 @@ def unpack_frame(p, rotate180=True):
 
 
 def unpack_special(p, rotate180=True):
-    """
-    Extract special event data (only return type id).
-    """
+    """Extract special event data (only return type id)."""
     if not p["etype"] == "special_event":
         return False
     p_arr = np.fromstring(p["dvs_data"], dtype=np.uint32)
@@ -114,10 +105,7 @@ unpack_func = {
 
 
 def unpack_data(d, rotate180=True):
-    """
-    Unpack data for given caer packet,
-    return False if event type does not exist.
-    """
+    """Unpack data for given caer packet, return False if event type does not exist."""
     _get_data = unpack_func.get(d["etype"])
     if _get_data:
         d["timestamp"], d["data"] = _get_data(d, rotate180)
@@ -210,11 +198,9 @@ class Controller(object):
             quit()
 
     def parse_command(self, command):
-        """
-        parse string command
-        e.g. string: put /1/1-DAVISFX2/'+str(sensor)+'/aps/ Exposure int 10
-        (copied from https://svn.code.sf.net/p/jaer/code/scripts/python/cAER_utils/imagers_characterization/caer_communication.py)
-        """
+        """parse string command e.g. string: put /1/1-DAVISFX2/'+str(sensor)+'/aps/
+        Exposure int 10 (copied from https://svn.code.sf.net/p/jaer/code/scripts/python/
+        cAER_utils/imagers_characterization/caer_communication.py)"""
         databuffer = bytearray(b"\x00" * self.data_buffer_size)
         node_length = 0
         key_length = 0
@@ -269,9 +255,8 @@ class Controller(object):
         return databuffer[0:databuffer_length]
 
     def send_command(self, string):
-        """
-        parse input command and send it to the device
-        print the answer
+        """parse input command and send it to the device print the answer.
+
         input string - ie. 'put /1/1-DAVISFX2/'+str(sensor)+'/aps/ Exposure int 100'
         """
         cmd = self.parse_command(string)
@@ -284,21 +269,21 @@ class Controller(object):
 
     def set_aps(self, name, dtype, value):
         self.send_command(
-            "put /1/1-DAVISFX3/%s/aps/ %s %s %s" % (SENSOR, name, dtype, value)
+            "put /1/1-DAVISFX3/{}/aps/ {} {} {}".format(SENSOR, name, dtype, value)
         )
 
 
 class ExposureCtl(Controller):
-    """
-    Automatic exposure control
+    """Automatic exposure control.
+
     * fps -- update frequency
     * target -- target average pixel value (between 0 and 255)
     * cutoff_top -- number of pixels at the top of image to be ignored
     * cutoff_bot -- number of pixels at the bottom of image to be ignored
-    
+
     We generally want to expose for road which is bottom of image. Therefore the default
-    is to ignore the top 100 pixels (cutoff_top) and to ignore the bottom 50 (cutoff_bot) 
-    which might be the hood. 
+    is to ignore the top 100 pixels (cutoff_top) and to ignore the bottom 50 (cutoff_bot)
+    which might be the hood.
     Howvever, if sensor is mounted upside down, then we should ignore a lot of the bottom
     (sky) and maybe a bit of the top (hood).
     """

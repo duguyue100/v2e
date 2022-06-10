@@ -1,30 +1,29 @@
 """Super SloMo class for dvs simulator project.
-    @author: Zhe He
-    @contact: hezhehz@live.cn
-    @latest update: 2019-May-27th
 
-    lightly modified based on this implementation: \
-        https://github.com/avinashpaliwal/Super-SloMo
+@author: Zhe He
+@contact: hezhehz@live.cn
+@latest update: 2019-May-27th
+
+lightly modified based on this implementation: \
+    https://github.com/avinashpaliwal/Super-SloMo
 """
-
-import torch
-import os
-import numpy as np
-import cv2
+import atexit
 import glob
+import logging
+import os
+import warnings
 
+import cv2
+import numpy as np
+import torch
+import torchvision.transforms as transforms
+from PIL import Image
 from tqdm import tqdm
 
-import torchvision.transforms as transforms
-
-from v2ecore.v2e_utils import video_writer, v2e_quit
 import v2ecore.dataloader as dataloader
 import v2ecore.model as model
-
-from PIL import Image
-import logging
-import atexit
-import warnings
+from v2ecore.v2e_utils import v2e_quit
+from v2ecore.v2e_utils import video_writer
 
 warnings.filterwarnings("ignore", category=UserWarning, module="torch.nn.functional")
 # https://github.com/fastai/fastai/issues/2370
@@ -33,10 +32,11 @@ logger = logging.getLogger(__name__)
 
 
 class SuperSloMo(object):
-    """Super SloMo class
-        @author: Zhe He
-        @contact: hezhehz@live.cn
-        @latest update: 2019-May-27th
+    """Super SloMo class.
+
+    @author: Zhe He
+    @contact: hezhehz@live.cn
+    @latest update: 2019-May-27th
     """
 
     def __init__(
@@ -51,8 +51,7 @@ class SuperSloMo(object):
         preview=False,
         avi_frame_rate=30,
     ):
-        """
-        init
+        """init.
 
         Parameters
         ----------
@@ -177,8 +176,7 @@ class SuperSloMo(object):
         return to_tensor, to_image
 
     def __load_data(self, source_frame_path, frame_size):
-        """Return a Dataloader instance, which is constructed with \
-            APS frames.
+        r"""Return a Dataloader instance, which is constructed with \ APS frames.
 
         Parameters
         ---------
@@ -201,7 +199,7 @@ class SuperSloMo(object):
         return videoFramesloader, frames.dim, frames.origDim
 
     def __model(self, dim):
-        """Initialize the pytorch model
+        """Initialize the pytorch model.
 
         Parameters
         ---------
@@ -244,8 +242,8 @@ class SuperSloMo(object):
         return flow_estimator, warper, interpolator
 
     def interpolate(self, source_frame_path, output_folder, frame_size):
-        """Run interpolation. \
-            Interpolated frames will be saved in folder self.output_folder.
+        r"""Run interpolation. \ Interpolated frames will be saved in folder
+        self.output_folder.
 
         Parameters
         ----------
@@ -566,8 +564,8 @@ class SuperSloMo(object):
         return interpTimes, avgUpsampling
 
     def __all_images(self, data_path):
-        """Return path of all input images. Assume that the ascending order of
-        file names is the same as the order of time sequence.
+        """Return path of all input images. Assume that the ascending order of file
+        names is the same as the order of time sequence.
 
         Parameters
         ----------
@@ -582,7 +580,7 @@ class SuperSloMo(object):
         images = glob.glob(os.path.join(data_path, "*.png"))
         if len(images) == 0:
             raise ValueError(
-                ("Input folder is empty or images are not in" " 'png' format.")
+                "Input folder is empty or images are not in" " 'png' format."
             )
         images_sorted = sorted(
             images, key=lambda line: int(line.split(os.sep)[-1].split(".")[0])
@@ -610,7 +608,7 @@ class SuperSloMo(object):
         return img
 
     def get_interpolated_timestamps(self, ts):
-        """ Interpolate the timestamps.
+        """Interpolate the timestamps.
 
         Parameters
         ----------

@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-
-"""
-Simple desktop dialogue box support for Python.
+"""Simple desktop dialogue box support for Python.
 
 Copyright (C) 2007, 2009, 2014 Paul Boddie <paul@boddie.org.uk>
 
@@ -44,9 +42,11 @@ attribute.
 Supported desktop environments are listed in the desktop.dialog.supported
 attribute.
 """
-
-from desktop import use_desktop, _readfrom, _status
 from time import strptime
+
+from desktop import _readfrom
+from desktop import _status
+from desktop import use_desktop
 
 
 class _wrapper:
@@ -114,7 +114,7 @@ class _readdate_zenity(_wrapper):
 
 class String:
 
-    "A generic parameter."
+    """A generic parameter."""
 
     def __init__(self, name):
         self.name = name
@@ -125,7 +125,7 @@ class String:
 
 class Strings(String):
 
-    "Multiple string parameters."
+    """Multiple string parameters."""
 
     def convert(self, value, program):
         return value or []
@@ -133,7 +133,7 @@ class Strings(String):
 
 class StringPairs(String):
 
-    "Multiple string parameters duplicated to make identifiers."
+    """Multiple string parameters duplicated to make identifiers."""
 
     def convert(self, value, program):
         l = []
@@ -145,7 +145,7 @@ class StringPairs(String):
 
 class StringKeyword:
 
-    "A keyword parameter."
+    """A keyword parameter."""
 
     def __init__(self, keyword, name):
         self.keyword = keyword
@@ -157,7 +157,7 @@ class StringKeyword:
 
 class StringKeywords:
 
-    "Multiple keyword parameters."
+    """Multiple keyword parameters."""
 
     def __init__(self, keyword, name):
         self.keyword = keyword
@@ -172,7 +172,7 @@ class StringKeywords:
 
 class Integer(String):
 
-    "An integer parameter."
+    """An integer parameter."""
 
     defaults = {"width": 40, "height": 15, "list_height": 10}
     scale = 8
@@ -192,7 +192,7 @@ class Integer(String):
 
 class IntegerKeyword(Integer):
 
-    "An integer keyword parameter."
+    """An integer keyword parameter."""
 
     def __init__(self, keyword, name, pixels=0):
         Integer.__init__(self, name, pixels)
@@ -206,7 +206,7 @@ class IntegerKeyword(Integer):
 
 class Boolean(String):
 
-    "A boolean parameter."
+    """A boolean parameter."""
 
     values = {
         "kdialog": ["off", "on"],
@@ -224,7 +224,7 @@ class Boolean(String):
 
 class MenuItemList(String):
 
-    "A menu item list parameter."
+    """A menu item list parameter."""
 
     def convert(self, value, program):
         l = []
@@ -236,7 +236,7 @@ class MenuItemList(String):
 
 class ListItemList(String):
 
-    "A radiolist/checklist item list parameter."
+    """A radiolist/checklist item list parameter."""
 
     def __init__(self, name, status_first=0):
         String.__init__(self, name)
@@ -261,7 +261,7 @@ class ListItemList(String):
 
 class MenuItem:
 
-    "A menu item which can also be used with radiolists and checklists."
+    """A menu item which can also be used with radiolists and checklists."""
 
     def __init__(self, value, text, status=0):
         self.value = value
@@ -284,8 +284,7 @@ class Dialogue:
 
     def open(self, desktop=None):
 
-        """
-        Open a dialogue box (dialog) using a program appropriate to the desktop
+        """Open a dialogue box (dialog) using a program appropriate to the desktop
         environment in use.
 
         If the optional 'desktop' parameter is specified then attempt to use
@@ -345,8 +344,8 @@ class Simple(Dialogue):
 
 class Question(Simple):
 
-    """
-    A dialogue asking a question and showing response buttons.
+    """A dialogue asking a question and showing response buttons.
+
     Options: text, width (in characters), height (in characters)
     Response: a boolean value indicating an affirmative response (true) or a
               negative response
@@ -371,8 +370,8 @@ class Question(Simple):
 
 class Warning(Simple):
 
-    """
-    A dialogue asking a question and showing response buttons.
+    """A dialogue asking a question and showing response buttons.
+
     Options: text, width (in characters), height (in characters)
     Response: a boolean value indicating an affirmative response (true) or a
               negative response
@@ -397,8 +396,8 @@ class Warning(Simple):
 
 class Message(Simple):
 
-    """
-    A message dialogue.
+    """A message dialogue.
+
     Options: text, width (in characters), height (in characters)
     Response: a boolean value indicating an affirmative response (true) or a
               negative response
@@ -423,8 +422,8 @@ class Message(Simple):
 
 class Error(Simple):
 
-    """
-    An error dialogue.
+    """An error dialogue.
+
     Options: text, width (in characters), height (in characters)
     Response: a boolean value indicating an affirmative response (true) or a
               negative response
@@ -449,8 +448,8 @@ class Error(Simple):
 
 class Menu(Simple):
 
-    """
-    A menu of options, one of which being selectable.
+    """A menu of options, one of which being selectable.
+
     Options: text, width (in characters), height (in characters),
              list_height (in items), items (MenuItem objects)
     Response: a value corresponding to the chosen item
@@ -491,11 +490,9 @@ class Menu(Simple):
         self, text, titles, items=None, width=None, height=None, list_height=None
     ):
 
-        """
-        Initialise a menu with the given heading 'text', column 'titles', and
-        optional 'items' (which may be added later), 'width' (in characters),
-        'height' (in characters) and 'list_height' (in items).
-        """
+        """Initialise a menu with the given heading 'text', column 'titles', and
+        optional 'items' (which may be added later), 'width' (in characters), 'height'
+        (in characters) and 'list_height' (in items)."""
 
         Simple.__init__(self, text, width, height)
         self.titles = ([""] * self.number_of_titles + titles)[-self.number_of_titles :]
@@ -504,17 +501,15 @@ class Menu(Simple):
 
     def add(self, *args, **kw):
 
-        """
-        Add an item, passing the given arguments to the appropriate item class.
-        """
+        """Add an item, passing the given arguments to the appropriate item class."""
 
         self.items.append(self.item(*args, **kw))
 
 
 class RadioList(Menu):
 
-    """
-    A list of radio buttons, one of which being selectable.
+    """A list of radio buttons, one of which being selectable.
+
     Options: text, width (in characters), height (in characters),
              list_height (in items), items (MenuItem objects), titles
     Response: a list of values corresponding to chosen items (since some
@@ -556,8 +551,8 @@ class RadioList(Menu):
 
 class CheckList(Menu):
 
-    """
-    A list of checkboxes, many being selectable.
+    """A list of checkboxes, many being selectable.
+
     Options: text, width (in characters), height (in characters),
              list_height (in items), items (MenuItem objects), titles
     Response: a list of values corresponding to chosen items
@@ -597,8 +592,8 @@ class CheckList(Menu):
 
 class Pulldown(Menu):
 
-    """
-    A pull-down menu of options, one of which being selectable.
+    """A pull-down menu of options, one of which being selectable.
+
     Options: text, width (in characters), height (in characters),
              items (list of values)
     Response: a value corresponding to the chosen item
@@ -638,8 +633,8 @@ class Pulldown(Menu):
 
 class Input(Simple):
 
-    """
-    An input dialogue, consisting of an input field.
+    """An input dialogue, consisting of an input field.
+
     Options: text, input, width (in characters), height (in characters)
     Response: the text entered into the dialogue by the user
     """
@@ -678,8 +673,8 @@ class Input(Simple):
 
 class Password(Input):
 
-    """
-    A password dialogue, consisting of a password entry field.
+    """A password dialogue, consisting of a password entry field.
+
     Options: text, width (in characters), height (in characters)
     Response: the text entered into the dialogue by the user
     """
@@ -707,8 +702,8 @@ class Password(Input):
 
 class TextFile(Simple):
 
-    """
-    A text file input box.
+    """A text file input box.
+
     Options: filename, text, width (in characters), height (in characters)
     Response: any text returned by the dialogue program (typically an empty
               string)
@@ -753,8 +748,8 @@ class TextFile(Simple):
 
 class FileSelector(Simple):
 
-    """
-    A file selector dialogue.
+    """A file selector dialogue.
+
     Options: directory to start in
     Response: a filename
     """
@@ -776,8 +771,8 @@ class FileSelector(Simple):
 
 class DirectorySelector(Simple):
 
-    """
-    A directory selector dialogue.
+    """A directory selector dialogue.
+
     Options: directory to start in
     Response: a filename
     """
@@ -806,8 +801,8 @@ class DirectorySelector(Simple):
 
 class Calendar(Simple):
 
-    """
-    A calendar dialogue.
+    """A calendar dialogue.
+
     Response: a tuple of the form (year, month, day number)
     """
 
