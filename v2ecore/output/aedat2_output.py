@@ -1,6 +1,5 @@
 import atexit
 import logging
-import struct
 
 import numpy as np
 from engineering_notation import EngNumber  # only from pip
@@ -99,7 +98,9 @@ class AEDat2Output:
             self.file = None
 
     def _writeHeader(self):
-        import datetime, time, getpass
+        import datetime
+        import time
+        import getpass
 
         # CRLF \r\n is needed to not break header parsing in jAER
         date = datetime.datetime.now().strftime(

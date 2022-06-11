@@ -533,7 +533,7 @@ class EventEmulator(object):
         img = (img - min) / (max - min)
 
         cv2.namedWindow(name, cv2.WINDOW_NORMAL)
-        if not name in self.show_list:
+        if name not in self.show_list:
             d = len(self.show_list) * 200
             # (x,y,w,h)=cv2.getWindowImageRect(name)
             cv2.moveWindow(
@@ -655,7 +655,7 @@ class EventEmulator(object):
 
         # add photoreceptor noise if we are using photoreceptor noise to create shot noise
         if (
-            self.photoreceptor_noise and not self.base_log_frame is None
+            self.photoreceptor_noise and self.base_log_frame is not None
         ):  # only add noise after the initial values are memorized and we can properly lowpass filter the noise
             self.photoreceptor_noise_vrms = compute_photoreceptor_noise_voltage(
                 shot_noise_rate_hz=self.shot_noise_rate_hz,
@@ -723,9 +723,9 @@ class EventEmulator(object):
             )
             self.diff_frame = self.c_minus_s_frame - self.base_log_frame
 
-        if not self.show_dvs_model_state is None:
+        if self.show_dvs_model_state is not None:
             for s in self.show_dvs_model_state:
-                if not s in self.dont_show_list:
+                if s not in self.dont_show_list:
                     f = getattr(self, s, None)
                     if f is None:
                         logger.error(f"{s} does not exist so we cannot show it")
@@ -997,7 +997,7 @@ class EventEmulator(object):
                 and max_change
                 > EventEmulator.MAX_CHANGE_TO_TERMINATE_EULER_SURROUND_STEPPING
             ):
-                if not self.show_dvs_model_state is None and steps % 100 == 0:
+                if self.show_dvs_model_state is not None and steps % 100 == 0:
                     cv2.pollKey()  # allow movement of windows and resizing
                 diff = p_ten - h_ten
                 p_term = alpha_p * diff

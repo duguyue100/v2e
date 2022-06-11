@@ -2,19 +2,13 @@ import atexit
 import logging
 import os
 from enum import Enum
-from typing import List
 
 import cv2
 import numpy as np
-from engineering_notation import EngNumber  # only from pip
 from numba import jit
-from numba import njit
-from tqdm import tqdm
 
-from v2ecore.emulator import EventEmulator
 from v2ecore.v2e_utils import checkAddSuffix
 from v2ecore.v2e_utils import hist2d_numba_seq
-from v2ecore.v2e_utils import read_image
 from v2ecore.v2e_utils import v2e_quit
 from v2ecore.v2e_utils import video_writer
 

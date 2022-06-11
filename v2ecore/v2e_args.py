@@ -1,7 +1,6 @@
 import argparse
 import logging
 import os
-from pathlib import Path
 
 from v2ecore.emulator import EventEmulator
 from v2ecore.renderer import ExposureMode
@@ -591,7 +590,7 @@ def write_args_info(args, path, other_args=None, command_line=None) -> str:
         f.write(arguments_list)
         if other_arguments_list is not None:
             f.write(other_arguments_list)
-        f.write(f"\n*** command line:\n" + command_line)
+        f.write("\n*** command line:\n" + command_line)
     return filepath
 
 

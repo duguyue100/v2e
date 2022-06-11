@@ -1,7 +1,6 @@
 # superclass for v2e synthetic input
 import argparse
 import atexit
-import os
 import sys
 from typing import List
 from typing import Optional

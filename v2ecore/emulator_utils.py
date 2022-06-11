@@ -5,7 +5,6 @@ Email : yuhuang.hu@ini.uzh.ch, tobi@ini.uzh.ch
 """
 import logging
 import math
-import sys
 
 import numpy as np
 import torch
@@ -203,7 +202,7 @@ def compute_photoreceptor_noise_voltage(
         return vn
 
     # check if we already estimated the required noise for this sample rate
-    if not compute_photoreceptor_noise_voltage.last_sample_rate is None:
+    if compute_photoreceptor_noise_voltage.last_sample_rate is not None:
         diff = np.abs(
             sample_rate_hz / compute_photoreceptor_noise_voltage.last_sample_rate - 1
         )

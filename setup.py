@@ -1,5 +1,4 @@
 """Setup script for v2e."""
-import setuptools
 from setuptools import find_packages
 from setuptools import setup
 

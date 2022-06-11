@@ -7,8 +7,6 @@ import os
 import subprocess
 
 import h5py
-import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
 
 from v2ecore.v2e_utils import select_events_in_roi

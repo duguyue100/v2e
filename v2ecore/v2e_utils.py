@@ -4,7 +4,6 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from tkinter import filedialog
 
 import cv2
 import easygui
@@ -160,7 +159,7 @@ def set_output_folder(
     :returns: the output folder path
     """
 
-    if (not output_folder is None) and output_in_place:
+    if (output_folder is not None) and output_in_place:
         raise ValueError(
             f"both output_folder={output_folder} and output_in_place={output_in_place} cannot be set true at same time"
         )
