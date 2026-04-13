@@ -168,8 +168,6 @@ exclude = ["^legacy/"]
 # Gradual adoption: ignore errors in legacy modules initially
 [[tool.mypy.overrides]]
 module = [
-    "v2ecore.ddd20_interfaces.*",
-    "v2ecore.ddd20_utils.*",
     "legacy.*",
 ]
 ignore_errors = true
