@@ -163,13 +163,14 @@ disallow_untyped_defs = true
 disallow_incomplete_defs = true
 check_untyped_defs = true
 no_implicit_optional = true
+exclude = ["^legacy/"]
 
 # Gradual adoption: ignore errors in legacy modules initially
 [[tool.mypy.overrides]]
 module = [
     "v2ecore.ddd20_interfaces.*",
     "v2ecore.ddd20_utils.*",
-    "v2ecore.desktop.*",
+    "legacy.*",
 ]
 ignore_errors = true
 
