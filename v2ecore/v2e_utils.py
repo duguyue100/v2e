@@ -1,18 +1,24 @@
 import glob
 import logging
 import os
-import sys
 import tempfile
 from pathlib import Path
-from typing import Optional, List, Tuple, Any, Dict, Union, Callable
+from typing import Any
+from typing import Callable
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
 import cv2
-import easygui  # type: ignore
+import easygui
 import numpy as np
 from engineering_notation import EngNumber as eng
 
+
 try:
-    from numba import njit, jit
+    from numba import jit
+    from numba import njit
 
     HAS_NUMBA = True
 except ImportError:
@@ -66,7 +72,9 @@ class ImageFolderReader:
         frame = cv2.imread(self.image_file_list[0])
         if frame is None:
             logger.error(
-                f'could not read a frame from file "{self.image_file_list[0]}" in folder "{self.image_folder_path}"'
+                'could not read a frame from file "%s" in folder "%s"',
+                self.image_file_list[0],
+                self.image_folder_path,
             )
             raise FileNotFoundError(
                 f"could not read a frame named {self.image_file_list[0]} from folder {self.image_folder_path}"
@@ -99,8 +107,8 @@ class ImageFolderReader:
         s = f"ImageFolderReader reading folder {self.image_folder_path} frame number {self.current_frame_idx}"
         try:
             s = s + f" named {self.image_file_list[self.current_frame_idx - 1]}"
-        except:
-            pass
+        except Exception:  # noqa: S110
+            pass  # noqa: S110
         return s
 
 
@@ -140,8 +148,8 @@ def make_output_folder(
 
     if non_empty_folder_exists and not overwrite and not unique_output_folder:
         logger.error(
-            f"non-empty output folder {os.path.abspath(output_folder)} already exists \n "
-            "- use --overwrite or --unique_output_folder"
+            "non-empty output folder %s already exists \n - use --overwrite or --unique_output_folder",
+            os.path.abspath(output_folder),
         )
         v2e_quit()
 
@@ -150,7 +158,7 @@ def make_output_folder(
             output_folder_base, suffix_counter + 1, overwrite, unique_output_folder
         )
     else:
-        logger.info(f"using output folder {output_folder}")
+        logger.info("using output folder %s", output_folder)
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
         return str(output_folder)
@@ -185,13 +193,13 @@ def set_output_folder(
             output_folder = str(ip.parent.absolute())
         elif ip.is_dir():
             output_folder = str(ip.absolute())
-        logger.info(f"output_in_place==True so output_folder={output_folder}")
+        logger.info("output_in_place==True so output_folder=%s", output_folder)
     else:
         output_folder = make_output_folder(
             output_folder if output_folder else "", 0, overwrite, unique_output_folder
         )
         p = Path(output_folder)
-        logger.info(f"output_in_place==False so made output_folder={p.absolute()}")
+        logger.info("output_in_place==False so made output_folder=%s", p.absolute())
 
     return str(output_folder)
 
@@ -243,22 +251,25 @@ def check_lowpass(cutoffhz: float, fs: float, logger: logging.Logger) -> None:
     maxcutoff = maxeps / (2 * np.pi * dt)
     if eps > maxeps:
         logger.warning(
-            f"Lowpass 3dB cutoff is f_3dB={eng(cutoffhz)}Hz (time constant tau={eng(tau)}s) with "
-            f"sample rate fs={eng(fs)}Hz (sample interval dt={eng(dt)}s) "
-            ",\n  but this results in large IIR mixing factor "
-            f"eps = dt/tau = {eps:5.3f} > {maxeps:4.1f} (maxeps),"
-            "\n which means the lowpass will filter  few or even just "
-            "last sample, i.e. you will not be lowpassing as expected."
-            "\nWe recommend either"
-            f"\n -decreasing --timestamp_resolution of DVS events below {eng(maxdt)}s"
-            f"\n -decreasing --cutoff_frequency_hz below {eng(maxcutoff)}Hz"
+            "Lowpass 3dB cutoff is f_3dB=%sHz (time constant tau=%ss) with sample rate fs=%sHz (sample interval dt=%ss) ,\n  but this results in large IIR mixing factor eps = dt/tau = %s > %s (maxeps),\n which means the lowpass will filter  few or even just last sample, i.e. you will not be lowpassing as expected.\nWe recommend either\n -decreasing --timestamp_resolution of DVS events below %ss\n -decreasing --cutoff_frequency_hz below %sHz",
+            eng(cutoffhz),
+            eng(tau),
+            eng(fs),
+            eng(dt),
+            eps,
+            maxeps,
+            eng(maxdt),
+            eng(maxcutoff),
         )
     else:
         logger.info(
-            f"Lowpass cutoff is f_3dB={eng(cutoffhz)}Hz with tau={eng(tau)}s and "
-            f"with sample rate fs={eng(fs)}Hz (sample interval dt={eng(dt)}s)"
-            f",\nIt has IIR mixing factor eps={eps:5.3f} which is OK "
-            f"because it is less than recommended maxeps={maxeps:4.1f}"
+            "Lowpass cutoff is f_3dB=%sHz with tau=%ss and with sample rate fs=%sHz (sample interval dt=%ss),\nIt has IIR mixing factor eps=%s which is OK because it is less than recommended maxeps=%s",
+            eng(cutoffhz),
+            eng(tau),
+            eng(fs),
+            eng(dt),
+            eps,
+            maxeps,
         )
 
 
@@ -289,12 +300,12 @@ def _inputFileDialog(types: List[Tuple[str, str]]) -> str:
     if filename is None:
         logger.info("no file selected, quitting")
         quit(0)
-    logger.info(f"selected {filename} with file dialog")
+    logger.info("selected %s with file dialog", filename)
     try:
         with open(fn, "w") as f:
             f.write(filename)
-    except:
-        pass
+    except Exception:  # noqa: S110
+        pass  # noqa: S110
     return str(filename) if filename else ""
 
 
@@ -327,15 +338,20 @@ def video_writer(
     fourcc: cv2.VideoWriter_fourcc
         codec, None results in default XVID
 
-    Returns
+    Returns:
     -------
     an instance of cv2.VideoWriter.
     """
-    fourcc_int = int(cv2.VideoWriter_fourcc(*fourcc))  # type: ignore
+    fourcc_int = int(cv2.VideoWriter_fourcc(*fourcc))
+
     out = cv2.VideoWriter(output_path, fourcc_int, frame_rate, (width, height))
     logger.info(
-        f"opened {output_path} with {OUTPUT_VIDEO_CODEC_FOURCC} https://www.fourcc.org/ codec, {frame_rate}fps, "
-        f"and ({width}x{height}) size"
+        "opened %s with %s https://www.fourcc.org/ codec, %sfps, and (%sx%s) size",
+        output_path,
+        OUTPUT_VIDEO_CODEC_FOURCC,
+        frame_rate,
+        width,
+        height,
     )
     return out
 
@@ -349,7 +365,7 @@ def all_images(data_path: str) -> List[str]:
     data_path: str
         path of the folder which contains input images.
 
-    Returns
+    Returns:
     -------
     List[str]
         sorted in numerical order.
@@ -371,7 +387,7 @@ def read_image(path: str) -> Any:
     path: str
         path of image.
 
-    Returns
+    Returns:
     -------
     img: Any scaled 0-255
     """
@@ -389,14 +405,14 @@ def read_aedat_txt_events(fname: str) -> Any:
     fname:str
         filename
 
-    Returns
+    Returns:
     -------
         Any with each row having ts,x,y,pol
         ts is in seconds
         pol is 0,1
     """
     import numpy as np
-    import pandas as pd  # type: ignore
+    import pandas as pd
 
     dat = pd.read_table(
         fname,
@@ -428,7 +444,7 @@ def select_events_in_roi(
     x: int or tuple, x coordinate.
     y: int or tuple, y coordinate.
 
-    Returns
+    Returns:
     -------
     Any, event just in ROI with the same shape as events.
     """
@@ -480,7 +496,7 @@ def histogram_events_in_time_bins(
     stop: float, end time in s
     polarity: int or None. If int, it must be 1 or -1.
 
-    Returns
+    Returns:
     -------
     histogram of counts
 

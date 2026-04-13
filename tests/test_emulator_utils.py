@@ -1,22 +1,19 @@
-import torch
 import numpy as np
-import pytest
+import torch
 
-from v2ecore.emulator_utils import (
-    lin_log,
-    low_pass_filter,
-    subtract_leak_current,
-    compute_event_map,
-    generate_shot_noise,
-)
+from v2ecore.emulator_utils import compute_event_map
+from v2ecore.emulator_utils import generate_shot_noise
+from v2ecore.emulator_utils import lin_log
+from v2ecore.emulator_utils import low_pass_filter
+from v2ecore.emulator_utils import subtract_leak_current
 
 
-def test_lin_log():
+def test_lin_log():  # type: ignore
     # Input tensor
     x = torch.tensor([10.0, 20.0, 30.0], dtype=torch.float32)
     threshold = 20.0
 
-    y = lin_log(x, threshold=threshold)
+    y = lin_log(x, threshold=threshold)  # type: ignore
 
     # Expected calculations
     # threshold = 20 -> f = (1/20)*ln(20) = 0.1497866
@@ -35,7 +32,7 @@ def test_lin_log():
     torch.testing.assert_close(y, expected, rtol=1e-5, atol=1e-5)
 
 
-def test_low_pass_filter():
+def test_low_pass_filter():  # type: ignore
     log_new_frame = torch.tensor([1.0, 2.0])
     lp_log_frame = torch.tensor([0.0, 1.0])
     delta_time = 0.1
@@ -57,7 +54,7 @@ def test_low_pass_filter():
     torch.testing.assert_close(res, expected)
 
 
-def test_subtract_leak_current():
+def test_subtract_leak_current():  # type: ignore
     base_log_frame = torch.tensor([1.0, 2.0, 3.0])
     leak_rate_hz = 0.1
     delta_time = 0.5
@@ -81,7 +78,7 @@ def test_subtract_leak_current():
     torch.testing.assert_close(res, expected)
 
 
-def test_compute_event_map():
+def test_compute_event_map():  # type: ignore
     diff_frame = torch.tensor([0.5, 1.5, -0.8, -2.5, 0.0])
     pos_thres = torch.tensor(1.0)
     neg_thres = torch.tensor(1.0)
@@ -95,7 +92,7 @@ def test_compute_event_map():
     torch.testing.assert_close(neg_evts, expected_neg)
 
 
-def test_generate_shot_noise():
+def test_generate_shot_noise():  # type: ignore
     shot_noise_rate_hz = 0.0  # 0 rate -> no noise
     delta_time = 0.1
     shot_noise_inten_factor = 1.0

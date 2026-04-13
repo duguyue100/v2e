@@ -1,8 +1,9 @@
-
 import multiprocessing as mp
+import queue
 
 import h5py
 import numpy as np
+
 
 SIZE_INC = 2048
 CHUNK_SIZE = 128
@@ -14,7 +15,15 @@ class HDF5(mp.Process):
     Provides an append method.
     """
 
-    def __init__(self, filename='rec.hdf5', tables={}, bufsize=2048*16, chunksize=0, mode='w-', compression=None):
+    def __init__(
+        self,
+        filename="rec.hdf5",
+        tables={},
+        bufsize=2048 * 16,
+        chunksize=0,
+        mode="w-",
+        compression=None,
+    ):
         super().__init__()
         self.compression = compression
         self.fname = filename
@@ -27,7 +36,7 @@ class HDF5(mp.Process):
         self.maxsize = self.q._maxsize
         self.exit = mp.Event()
         self.fmode = mode
-        #self.daemon = True
+        # self.daemon = True
         self.start()
 
     def init_ds(self):
@@ -38,26 +47,26 @@ class HDF5(mp.Process):
 
     def run(self):
         self.init_ds()
-        f = file('datasets_ioerrors.txt', 'a')
+        f = open("datasets_ioerrors.txt", "a")
         while not self.exit.is_set() or not self.q.empty():
             try:
                 res = self.q.get(False, 1e-3)
                 self._save(res)
-            except Queue.Empty:
+            except queue.Empty:
                 pass
             except OSError:
-                print('IOError, continuing')
+                print("IOError, continuing")
                 f.write(str(res))
                 pass
             except KeyboardInterrupt:
-                #print('datasets.run got interrupt')
+                # print('datasets.run got interrupt')
                 self.exit.set()
         f.cleanup()
         self.close()
 
     def create_datasets(self, tables, compression=None):
         for tname, ttype in tables.iteritems():
-            tname_split = tname.split('/')
+            tname_split = tname.split("/")
             if len(tname_split) > 1:
                 grpname, subtname = tname_split
                 if grpname not in self.f:
@@ -67,7 +76,7 @@ class HDF5(mp.Process):
             else:
                 subtname = tname
                 rnode = self.f
-            tname = tname.replace('/', '_')
+            tname = tname.replace("/", "_")
             extra_shape = ()
             self.ndims[tname] = 1
             if isinstance(ttype, (tuple, list)):
@@ -81,21 +90,23 @@ class HDF5(mp.Process):
                 maxshape=(None,) + extra_shape,
                 chunks=(self.chunk_size,) + extra_shape,
                 dtype=ttype,
-                compression=compression)
+                compression=compression,
+            )
             self.outbuffers[tname] = []
 
     def save(self, data):
         try:
             self.q.put_nowait(data)
-        except Queue.Full:
-            raise Queue.Full('dataset buffer overflow')
+        except queue.Full:
+            raise queue.Full("dataset buffer overflow")
 
     def _save(self, data):
-        for col,val in data.iteritems():
+        for col, val in data.iteritems():
             self.outbuffers[col].append(val)
             if len(self.outbuffers[col]) == self.chunk_size:
-                self[col][self.ptrs[col]:self.ptrs[col] + self.chunk_size] = \
-                        self._get_outbuf(col)
+                self[col][self.ptrs[col] : self.ptrs[col] + self.chunk_size] = (
+                    self._get_outbuf(col)
+                )
                 self.outbuffers[col] = []
                 self.ptrs[col] += self.chunk_size
             if self.ptrs[col] == self.size[col]:
@@ -117,4 +128,4 @@ class HDF5(mp.Process):
         self.f.close()
         self.q.close()
         self.q.join_thread()
-        print('\nclosed output file')
+        print("\nclosed output file")

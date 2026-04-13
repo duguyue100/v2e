@@ -1,9 +1,9 @@
-import pytest
 import numpy as np
+
 from v2ecore.emulator import EventEmulator
 
 
-def test_emulator_basic():
+def test_emulator_basic():  # type: ignore
     # 346x260 random frames
     w, h = 346, 260
     emulator = EventEmulator(
@@ -31,7 +31,7 @@ def test_emulator_basic():
     assert events_generated, "Expected some events to be generated"
 
 
-def test_emulator_sci_mode():
+def test_emulator_sci_mode():  # type: ignore
     w, h = 346, 260
     emulator = EventEmulator(
         pos_thres=0.2,
@@ -55,7 +55,7 @@ def test_emulator_sci_mode():
     assert events_generated, "Expected some events to be generated"
 
 
-def test_emulator_cs_mode():
+def test_emulator_cs_mode():  # type: ignore
     w, h = 346, 260
     emulator = EventEmulator(
         pos_thres=0.2,

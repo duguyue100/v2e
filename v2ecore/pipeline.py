@@ -1,11 +1,13 @@
 from pathlib import Path
-
 from typing import Any
+
 import numpy as np
 
-from v2ecore.config import V2EConfig, OutputConfig
+from v2ecore.config import OutputConfig
+from v2ecore.config import V2EConfig
 from v2ecore.emulator import EventEmulator
-from v2ecore.output.base import CompositeEventWriter, EventWriter
+from v2ecore.output.base import CompositeEventWriter
+from v2ecore.output.base import EventWriter
 from v2ecore.synthetic.base import SyntheticInput
 
 

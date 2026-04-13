@@ -1,6 +1,6 @@
-import h5py
-import numpy as np
 from typing import Any
+
+import h5py
 
 
 class Hdf5EventWriter:
@@ -21,8 +21,7 @@ class Hdf5EventWriter:
         if events is None or len(events) == 0:
             return
         self.dvs_h5_dataset.resize(
-            self.dvs_h5_dataset.shape[0] + events.shape[0],
-            axis=0,
+            self.dvs_h5_dataset.shape[0] + events.shape[0], axis=0
         )
         self.dvs_h5_dataset[-events.shape[0] :] = events
 

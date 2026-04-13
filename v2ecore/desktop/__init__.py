@@ -81,17 +81,22 @@ import os
 import shlex
 import sys
 
+
 # Provide suitable process creation functions.
 
 try:
     import subprocess
+
     def _run(cmd, shell, wait):
         opener = subprocess.Popen(cmd, shell=shell)
-        if wait: opener.wait()
+        if wait:
+            opener.wait()
         return opener.pid
 
     def _readfrom(cmd, shell):
-        opener = subprocess.Popen(cmd, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        opener = subprocess.Popen(
+            cmd, shell=shell, stdin=subprocess.PIPE, stdout=subprocess.PIPE
+        )
         opener.stdin.close()
         return opener.stdout.read()
 
@@ -102,9 +107,11 @@ try:
 
 except ImportError:
     import popen2
+
     def _run(cmd, shell, wait):
         opener = popen2.Popen3(cmd)
-        if wait: opener.wait()
+        if wait:
+            opener.wait()
         return opener.pid
 
     def _readfrom(cmd, shell):
@@ -120,6 +127,7 @@ except ImportError:
 
 # Private functions.
 
+
 def _get_x11_vars():
     """Return suitable environment definitions for X11."""
     if not os.environ.get("DISPLAY", "").strip():
@@ -127,37 +135,49 @@ def _get_x11_vars():
     else:
         return ""
 
+
 def _is_xfce():
     """Return whether XFCE is in use."""
     # XFCE detection involves testing the output of a program.
 
     try:
-        return _readfrom(_get_x11_vars() + "xprop -root _DT_SAVE_MODE", shell=1).strip().endswith(b' = "xfce4"')
+        return (
+            _readfrom(_get_x11_vars() + "xprop -root _DT_SAVE_MODE", shell=1)
+            .strip()
+            .endswith(b' = "xfce4"')
+        )
     except OSError:
         return 0
+
 
 def _is_x11():
     """Return whether the X Window System is in use."""
     return "DISPLAY" in os.environ
 
+
 # Introspection functions.
+
 
 def get_desktop():
     """
     Detect the current desktop environment, returning the name of the
     environment. If no environment could be detected, None is returned.
     """
-    if "KDE_FULL_SESSION" in os.environ or \
-        "KDE_MULTIHEAD" in os.environ:
+    if "KDE_FULL_SESSION" in os.environ or "KDE_MULTIHEAD" in os.environ:
         try:
             if int(os.environ.get("KDE_SESSION_VERSION", "3")) >= 4:
                 return "KDE4"
         except ValueError:
             pass
         return "KDE"
-    elif "GNOME_DESKTOP_SESSION_ID" in os.environ or \
-        "GNOME_KEYRING_SOCKET" in os.environ or ('DESKTOP_SESSION' in os.environ and \
-        os.environ['DESKTOP_SESSION'].lower() == 'lubuntu'):
+    elif (
+        "GNOME_DESKTOP_SESSION_ID" in os.environ
+        or "GNOME_KEYRING_SOCKET" in os.environ
+        or (
+            "DESKTOP_SESSION" in os.environ
+            and os.environ["DESKTOP_SESSION"].lower() == "lubuntu"
+        )
+    ):
         return "GNOME"
     elif sys.platform == "darwin":
         return "Mac OS X"
@@ -172,6 +192,7 @@ def get_desktop():
         return "X11"
     else:
         return None
+
 
 def use_desktop(desktop):
     """
@@ -208,6 +229,7 @@ def use_desktop(desktop):
     else:
         return None
 
+
 def is_standard():
     """
     Return whether the current desktop supports standardised application
@@ -215,7 +237,9 @@ def is_standard():
     """
     return "DESKTOP_LAUNCH" in os.environ
 
+
 # Activity functions.
+
 
 def open(url, desktop=None, wait=0):
     """
@@ -263,7 +287,7 @@ def open(url, desktop=None, wait=0):
     elif desktop_in_use == "XFCE":
         # exo-open 0.10 cannot parse the mailto: URL scheme if there is no
         # recipient
-        if url.lower().startswith('mailto:'):
+        if url.lower().startswith("mailto:"):
             cmd = ["exo-open", "--launch", "MailReader", url]
         else:
             cmd = ["exo-open", url]
@@ -277,8 +301,12 @@ def open(url, desktop=None, wait=0):
     # Finish with an error where no suitable desktop was identified.
 
     else:
-        raise OSError("Desktop '%s' not supported (neither DESKTOP_LAUNCH nor os.startfile could be used)" % desktop_in_use)
+        raise OSError(
+            "Desktop '%s' not supported (neither DESKTOP_LAUNCH nor os.startfile could be used)"
+            % desktop_in_use
+        )
 
     return _run(cmd, 0, wait)
+
 
 # vim: tabstop=4 expandtab shiftwidth=4

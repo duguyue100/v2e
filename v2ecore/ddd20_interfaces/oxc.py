@@ -1,4 +1,3 @@
-
 """
 Recorder for DAVIS + OpenXC data
 Author: J. Binas <jbinas@gmail.com>, 2017
@@ -7,8 +6,8 @@ This software is released under the
 GNU LESSER GENERAL PUBLIC LICENSE Version 3.
 """
 
-
 import multiprocessing as mp
+import queue
 import time
 
 from openxc.tools import dump as oxc
@@ -24,12 +23,12 @@ class Monitor(mp.Process):
         self.qsize = 0
         self.maxsize = self.q._maxsize
         self.exit = mp.Event()
-        #self.daemon = True
+        # self.daemon = True
         self.start()
 
     def run(self):
         self.source.start()
-        #self.source.join()
+        # self.source.join()
         while not self.exit.is_set():
             try:
                 time.sleep(1e-5)
@@ -41,20 +40,19 @@ class Monitor(mp.Process):
         """Receive single message from interface"""
         if self.exit.is_set():
             return
-        message['timestamp'] = int(time.time() * 1e6)
+        message["timestamp"] = int(time.time() * 1e6)
         try:
             self.q.put_nowait(message)
             self.qsize = max(self.qsize, self.q.qsize())
-        except Queue.Full:
-            raise Queue.Full('vi buffer overflow')
+        except queue.Full:
+            raise queue.Full("vi buffer overflow")
 
     def get(self):
         """Get one message from buffer"""
         return self.q.get_nowait() if not self.q.empty() else False
 
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     vi = Monitor()
 
     i = 0
@@ -64,8 +62,7 @@ if __name__ == '__main__':
         if res:
             print(res)
         if time.time() - t > 1:
-            print('\npolling at', i / (time.time() - t), 'Hz\n')
+            print("\npolling at", i / (time.time() - t), "Hz\n")
             i = 0
             t = time.time()
         i += 1
-

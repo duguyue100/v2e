@@ -1,7 +1,5 @@
-from typing import Protocol
-
-import numpy as np
 from typing import Any
+from typing import Protocol
 
 
 class EventWriter(Protocol):

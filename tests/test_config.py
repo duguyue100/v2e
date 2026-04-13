@@ -1,25 +1,24 @@
-import pytest
-from pydantic import ValidationError
 from pathlib import Path
 
-from v2ecore.config import (
-    DVSModelConfig,
-    InputConfig,
-    SloMoConfig,
-    OutputConfig,
-    RendererConfig,
-    V2EConfig,
-)
+import pytest
+from pydantic import ValidationError
+
+from v2ecore.config import DVSModelConfig
+from v2ecore.config import InputConfig
+from v2ecore.config import OutputConfig
+from v2ecore.config import RendererConfig
+from v2ecore.config import SloMoConfig
+from v2ecore.config import V2EConfig
 
 
-def test_dvs_model_config_valid_default():
+def test_dvs_model_config_valid_default():  # type: ignore
     config = DVSModelConfig()
     assert config.pos_thres == 0.2
     assert config.neg_thres == 0.2
     assert config.cutoff_hz == 300.0
 
 
-def test_dvs_model_config_invalid():
+def test_dvs_model_config_invalid():  # type: ignore
     with pytest.raises(ValidationError):
         DVSModelConfig(pos_thres=-0.1)  # gt=0 expected
 
@@ -36,12 +35,12 @@ def test_dvs_model_config_invalid():
         DVSModelConfig(refractory_period_s=-0.5)  # ge=0 expected
 
 
-def test_input_config_valid():
+def test_input_config_valid():  # type: ignore
     config = InputConfig(input_path=Path("some/path"), input_slowmotion_factor=2.0)
     assert config.input_slowmotion_factor == 2.0
 
 
-def test_slomo_config_valid_and_invalid():
+def test_slomo_config_valid_and_invalid():  # type: ignore
     config = SloMoConfig(batch_size=4)
     assert config.batch_size == 4
 
@@ -52,19 +51,19 @@ def test_slomo_config_valid_and_invalid():
         SloMoConfig(batch_size=-2)
 
 
-def test_output_config_valid():
+def test_output_config_valid():  # type: ignore
     config = OutputConfig(output_folder=Path("my_out"), overwrite=True)
     assert config.output_folder == Path("my_out")
     assert config.overwrite is True
 
 
-def test_renderer_config_valid():
+def test_renderer_config_valid():  # type: ignore
     config = RendererConfig(dvs_vid="out.avi", dvs_vid_full_scale=3)
     assert config.dvs_vid == "out.avi"
     assert config.dvs_vid_full_scale == 3
 
 
-def test_v2e_config_initialization():
+def test_v2e_config_initialization():  # type: ignore
     config = V2EConfig()
 
     # Check default nestings

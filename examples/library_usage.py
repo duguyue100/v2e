@@ -1,5 +1,8 @@
 import numpy as np
-from v2ecore import EventEmulator, V2EConfig
+
+from v2ecore import EventEmulator
+from v2ecore import V2EConfig
+
 
 config = V2EConfig()
 emulator = EventEmulator(
@@ -10,7 +13,7 @@ emulator = EventEmulator(
     leak_rate_hz=config.dvs.leak_rate_hz,
     refractory_period_s=config.dvs.refractory_period_s,
     shot_noise_rate_hz=config.dvs.shot_noise_rate_hz,
-    photoreceptor_noise=config.dvs.photoreceptor_noise or False,
+    photoreceptor_noise=config.dvs.photoreceptor_noise or False,  # type: ignore
     leak_jitter_fraction=config.dvs.leak_jitter_fraction,
     noise_rate_cov_decades=config.dvs.noise_rate_cov_decades,
     seed=config.dvs.seed,

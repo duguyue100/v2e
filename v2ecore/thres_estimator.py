@@ -6,7 +6,10 @@ Email : yuhuang.hu@ini.uzh.ch
 
 import os
 import subprocess
-from typing import Any, List, Optional, Tuple
+from typing import Any
+from typing import List
+from typing import Optional
+from typing import Tuple
 
 import h5py
 import numpy as np
@@ -21,7 +24,6 @@ def evaluate_threshold(
     event_count_diffs: List[Optional[float]],
     ref_event_count: int = 0,
 ) -> Tuple[float, List[Optional[float]]]:
-
     # v2e commands
     v2e_command = [
         "v2e.py",

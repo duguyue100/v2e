@@ -44,9 +44,14 @@ See the desktop.windows.Window class for more information.
 
 import re
 
-from desktop import _get_x11_vars, _is_x11, _readfrom, use_desktop
+from desktop import _get_x11_vars
+from desktop import _is_x11
+from desktop import _readfrom
+from desktop import use_desktop
+
 
 # System functions.
+
 
 def _xwininfo(identifier, action):
     if identifier is None:
@@ -74,30 +79,37 @@ def _xwininfo(identifier, action):
     else:
         return s
 
+
 def _get_int_properties(d, properties):
     results = []
     for property in properties:
         results.append(int(d[property]))
     return results
 
+
 # Finder functions.
+
 
 def find_all(name):
     return 1
 
+
 def find_named(name):
     return name is not None
+
 
 def find_by_name(name):
     return lambda n, t=name: n == t
 
+
 # Window classes.
 # NOTE: X11 is the only supported desktop so far.
+
 
 class Window:
     """A window on the desktop."""
 
-    _name_pattern = re.compile(r':\s+\(.*?\)\s+[-0-9x+]+\s+[-0-9+]+$')
+    _name_pattern = re.compile(r":\s+\(.*?\)\s+[-0-9x+]+\s+[-0-9+]+$")
     _absent_names = "(has no name)", "(the root window) (has no name)"
 
     def __init__(self, identifier):
@@ -137,9 +149,11 @@ class Window:
     def _get_descendant_handle_and_name(self, line):
         match = self._name_pattern.search(line)
         if match:
-            return self._get_handle_and_name(line[:match.start()].strip())
+            return self._get_handle_and_name(line[: match.start()].strip())
         else:
-            raise OSError("Window information from %r did not contain window details." % line)
+            raise OSError(
+                "Window information from %r did not contain window details." % line
+            )
 
     def _descendants(self, s, fn):
         handles = []
@@ -198,7 +212,9 @@ class Window:
     def position(self):
         """Return a tuple containing the upper left co-ordinates of this window."""
         d = _xwininfo(self.identifier, "stats")
-        return _get_int_properties(d, ["Absolute upper-left X", "Absolute upper-left Y"])
+        return _get_int_properties(
+            d, ["Absolute upper-left X", "Absolute upper-left Y"]
+        )
 
     def displayed(self):
         """
@@ -213,6 +229,7 @@ class Window:
         d = _xwininfo(self.identifier, "stats")
         return d["Map State"] == "IsViewable"
 
+
 def list(desktop=None):
     """
     Return a list of windows for the current desktop. If the optional 'desktop'
@@ -223,6 +240,7 @@ def list(desktop=None):
     window_list = [window for window in root_window.descendants() if window.displayed()]
     window_list.insert(0, root_window)
     return window_list
+
 
 def root(desktop=None):
     """
@@ -238,6 +256,7 @@ def root(desktop=None):
     else:
         raise OSError("Desktop '%s' not supported" % use_desktop(desktop))
 
+
 def find(callable, desktop=None):
     """
     Find and return windows using the given 'callable' for the current desktop.
@@ -245,5 +264,6 @@ def find(callable, desktop=None):
     particular desktop environment's mechanisms to look for windows.
     """
     return root(desktop).find(callable)
+
 
 # vim: tabstop=4 expandtab shiftwidth=4

@@ -1,18 +1,20 @@
-import numpy as np
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
-import cv2
-import os
 import atexit
 import logging
-from tqdm import tqdm
-from typing import List
-from engineering_notation import EngNumber  # only from pip
+import os
 from enum import Enum
-from numba import jit, njit
+from typing import Any
+from typing import Optional
+from typing import Tuple
 
-from v2ecore.emulator import EventEmulator
-from v2ecore.v2e_utils import video_writer, read_image, checkAddSuffix, v2e_quit
+import cv2
+import numpy as np
+from numba import jit
+
+from v2ecore.v2e_utils import checkAddSuffix
 from v2ecore.v2e_utils import hist2d_numba_seq
+from v2ecore.v2e_utils import v2e_quit
+from v2ecore.v2e_utils import video_writer
+
 
 logger = logging.getLogger(__name__)
 
@@ -135,8 +137,7 @@ class EventRenderer(object):
             cv2.destroyAllWindows()
 
     def _check_outputs_open(self) -> None:
-        """checks that output video and event datasets files are open"""
-
+        """Checks that output video and event datasets files are open"""
         if self.video_output_file is not None:
             return
 
@@ -194,7 +195,7 @@ class EventRenderer(object):
         width: width of output video in pixels
         return_frames: return Frames if True, return None otherwise
 
-        Returns
+        Returns:
         -------
         rendered frames from these events, or None if no new frame was filled.
         Frames are np.ndarray with [n,h,w] shape,

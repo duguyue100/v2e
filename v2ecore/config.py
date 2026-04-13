@@ -1,8 +1,9 @@
 import argparse
-import torch
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+import torch
+from pydantic import BaseModel
+from pydantic import Field
 
 
 class DVSModelConfig(BaseModel):

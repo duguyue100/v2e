@@ -4,7 +4,6 @@ Author: Yuhuang Hu
 Email : yuhuang.hu@ini.uzh.ch
 """
 
-
 import argparse
 import glob
 import os
@@ -12,8 +11,10 @@ from tempfile import TemporaryDirectory
 
 import numpy as np
 from skimage.io import imread
+
 from v2e.renderer import EventRenderer
 from v2e.slomo import SuperSloMo
+
 
 # define a parser
 parser = argparse.ArgumentParser()
@@ -26,34 +27,24 @@ parser.add_argument(
     "--pos_thres",
     type=float,
     default=0.25,
-    help="threshold to trigger a positive event"
+    help="threshold to trigger a positive event",
 )
 
 parser.add_argument(
     "--neg_thres",
     type=float,
     default=0.35,
-    help="threshold to trigger a negative event"
+    help="threshold to trigger a negative event",
 )
 
-parser.add_argument(
-    "--sf",
-    type=int,
-    required=True,
-    help="slow motion factor"
-)
+parser.add_argument("--sf", type=int, required=True, help="slow motion factor")
 
-parser.add_argument(
-    "--checkpoint",
-    type=str,
-    required=True,
-    help="path of checkpoint"
-)
+parser.add_argument("--checkpoint", type=str, required=True, help="path of checkpoint")
 
 args = parser.parse_args()
 
 # set fps, use 30
-fps = 30.
+fps = 30.0
 
 assert os.path.isdir(args.dir)
 
@@ -74,7 +65,7 @@ for vid_path in collectd_paths:
         os.makedirs(vid_out_path)
 
     # get all frames
-    file_list = sorted(glob.glob(f"{vid_path}"+"/*.*"))
+    file_list = sorted(glob.glob(f"{vid_path}" + "/*.*"))
 
     frames = []
 
@@ -84,9 +75,11 @@ for vid_path in collectd_paths:
 
         if frame.ndim == 3:
             # convert image
-            frame = (0.2126 * frame[:, :, 0] +
-                     0.7152 * frame[:, :, 1] +
-                     0.0722 * frame[:, :, 2])
+            frame = (
+                0.2126 * frame[:, :, 0]
+                + 0.7152 * frame[:, :, 1]
+                + 0.0722 * frame[:, :, 2]
+            )
 
         frame = frame.astype(np.uint8)
 
@@ -94,15 +87,10 @@ for vid_path in collectd_paths:
         print(f"Loading file {img_file}")
 
     frames = np.stack(frames)
-    num_frames = frames.shape[0]
+    num_frames = frames.shape[0]  # type: ignore
 
     # this is in seconds
-    input_ts = output_ts = np.linspace(
-        0,
-        num_frames / fps,
-        num_frames,
-        endpoint=False
-    )
+    input_ts = output_ts = np.linspace(0, num_frames / fps, num_frames, endpoint=False)
 
     # export frame time stamps
     np.save(os.path.join(vid_out_path, "frame_ts.npy"), input_ts)
@@ -111,22 +99,14 @@ for vid_path in collectd_paths:
         print("tmp_dir: ", dirname)
 
         # do not export video
-        s = SuperSloMo(
-            args.checkpoint,
-            args.sf,
-            dirname,
-            video_path=None
-        )
+        s = SuperSloMo(args.checkpoint, args.sf, dirname, video_path=None)
         s.interpolate(frames)
         interpolated_ts = s.get_interpolated_timestamps(input_ts)
-        height, width = frames.shape[1:]
+        height, width = frames.shape[1:]  # type: ignore
 
         # render events
         output_ts = np.linspace(
-            0,
-            (num_frames - 1) / fps,
-            args.sf * (num_frames - 1),
-            endpoint=False
+            0, (num_frames - 1) / fps, args.sf * (num_frames - 1), endpoint=False
         )
 
         r_slomo = EventRenderer(
@@ -135,12 +115,10 @@ for vid_path in collectd_paths:
             interpolated_ts,
             args.pos_thres,
             args.neg_thres,
-            os.path.join(
-                vid_out_path,
-                f"interpolated_{int(args.sf*fps):d}.avi"
-            )
+            os.path.join(vid_out_path, f"interpolated_{int(args.sf*fps):d}.avi"),
         )
 
         # generate and save events
         r_slomo.generateEventsFromFramesAndExportEventsToHDF5(
-            os.path.join(vid_out_path, "events.hdf5"))
+            os.path.join(vid_out_path, "events.hdf5")
+        )

@@ -12,18 +12,23 @@ import glob
 import logging
 import os
 import warnings
+from typing import Any
+from typing import List
+from typing import Optional
+from typing import Tuple
 
 import cv2
 import numpy as np
 import torch
-import torchvision.transforms as transforms  # type: ignore
+import torchvision.transforms as transforms
 from PIL import Image
 from tqdm import tqdm
-from typing import Optional, Tuple, Any, List, Union
 
 import v2ecore.dataloader as dataloader
 import v2ecore.model as model
-from v2ecore.v2e_utils import v2e_quit, video_writer
+from v2ecore.v2e_utils import v2e_quit
+from v2ecore.v2e_utils import video_writer
+
 
 warnings.filterwarnings("ignore", category=UserWarning, module="torch.nn.functional")
 # https://github.com/fastai/fastai/issues/2370
@@ -72,7 +77,7 @@ class SuperSloMo:
         vid_slomo: str or None,
             name of slomo video file, needs video_path to be set too
 
-        Returns
+        Returns:
         -------
             None in case of slowdown_factor=int value.
             np.array of deltaTimes as fractions of source frame interval, based on limiting flow to at most 1 pixel per interframe.
@@ -94,7 +99,8 @@ class SuperSloMo:
 
         if upsampling_factor is not None and auto_upsample:
             logger.info(
-                f"Using auto_upsample and upsampling_factor; setting minimum upsampling to {upsampling_factor}"
+                "Using auto_upsample and upsampling_factor; setting minimum upsampling to %s",
+                upsampling_factor,
             )
 
         self.upsampling_factor = upsampling_factor
@@ -102,13 +108,14 @@ class SuperSloMo:
 
         if upsampling_factor > 100:
             logger.warning(
-                f"upsampling_factor={upsampling_factor} which is large, upsampling will take a long time; consider using auto_upsample to limit maximum optical to 1 pixel per upsampled frame"
+                "upsampling_factor=%s which is large, upsampling will take a long time; consider using auto_upsample to limit maximum optical to 1 pixel per upsampled frame",
+                upsampling_factor,
             )
 
         if self.auto_upsample:
             logger.info("using automatic upsampling mode")
         else:
-            logger.info(f"upsampling by fixed factor of {self.upsampling_factor}")
+            logger.info("upsampling by fixed factor of %s", self.upsampling_factor)
 
         self.video_path = video_path
         self.preview = preview
@@ -130,14 +137,16 @@ class SuperSloMo:
     def cleanup(self) -> None:
         if self.ori_writer is not None:
             logger.info(
-                f"closing original video AVI {self.vid_orig} after "
-                f"writing {self.numOrigVideoFramesWritten} frames"
+                "closing original video AVI %s after writing %s frames",
+                self.vid_orig,
+                self.numOrigVideoFramesWritten,
             )
             self.ori_writer.release()
         if self.slomo_writer is not None:
             logger.info(
-                f"closing slomo video AVI {self.vid_slomo} after "
-                f"writing {self.numSlomoVideoFramesWritten} frames"
+                "closing slomo video AVI %s after writing %s frames",
+                self.vid_slomo,
+                self.numSlomoVideoFramesWritten,
             )
             self.slomo_writer.release()
         cv2.destroyAllWindows()
@@ -145,7 +154,7 @@ class SuperSloMo:
     def __transform(self) -> Tuple[transforms.Compose, transforms.Compose]:
         """Create the Transform instances.
 
-        Returns
+        Returns:
         -------
         to_tensor: Pytorch Transform instance.
         to_image: Pytorch Transform instance.
@@ -175,7 +184,7 @@ class SuperSloMo:
         images: np.ndarray, [N, W, H]
             input APS frames.
 
-        Returns
+        Returns:
         -------
         videoFramesloader: Pytorch Dataloader instance.
         frames.dim: new size.
@@ -200,7 +209,7 @@ class SuperSloMo:
         dim: tuple
             size of resized images.
 
-        Returns
+        Returns:
         -------
         flow_estimator: nn.Module
         warpper: nn.Module
@@ -270,7 +279,7 @@ class SuperSloMo:
         there will be 10 frames written, frame0 is the first input frame, and frame9 is the 9th interpolated frame.
         Frame1 is *not* included, so that it can be fed as input for the next interpolation.
 
-        Returns
+        Returns:
         -------
         deltaTimes: np.array,
             Array of delta times relative to src frame intervals. This array must be multiplied by the source frame interval to obtain the times of the frames. There will be a variable number of times depending on auto_upsample and upsampling_factor.
@@ -288,11 +297,13 @@ class SuperSloMo:
         del ls
         if nframes / self.batch_size < 2:
             logger.warning(
-                f"only {nframes} input frames with batch_size={self.batch_size}, automatically reducing batch size to provide at least 2 batches"
+                "only %s input frames with batch_size=%s, automatically reducing batch size to provide at least 2 batches",
+                nframes,
+                self.batch_size,
             )
             while nframes / self.batch_size < 2:
                 self.batch_size = int(self.batch_size / 2)
-            logger.info(f"using batch_size={self.batch_size}")
+            logger.info("using batch_size=%s", self.batch_size)
         video_frame_loader, dim, ori_dim = self.__load_data(
             source_frame_path, frame_size
         )
@@ -343,7 +354,11 @@ class SuperSloMo:
             #      " to store interpolated frames")
             nImages = len(video_frame_loader)
             logger.info(
-                f"interpolating {len(video_frame_loader)} batches of frames using batch_size={self.batch_size} with auto_upsample={self.auto_upsample} and minimum upsampling_factor={self.upsampling_factor}"
+                "interpolating %s batches of frames using batch_size=%s with auto_upsample=%s and minimum upsampling_factor=%s",
+                len(video_frame_loader),
+                self.batch_size,
+                self.auto_upsample,
+                self.upsampling_factor,
             )
             if nImages < 2:
                 raise Exception(
@@ -414,7 +429,7 @@ class SuperSloMo:
                     ):
                         upsampling_factor = self.upsampling_factor
                     if numUpsamplingReportsLeft > 0:
-                        logger.info(f"upsampled by factor {upsampling_factor}")
+                        logger.info("upsampled by factor %s", upsampling_factor)
                         numUpsamplingReportsLeft -= 1
                 else:
                     upsampling_factor = self.upsampling_factor
@@ -555,7 +570,10 @@ class SuperSloMo:
         nTimePoints = len(interpTimes)
         avgUpsampling = upsamplingSum / nUpsamplingSamples
         logger.info(
-            f"Wrote {nFramesWritten} frames and returning {nTimePoints} frame times.\nAverage upsampling factor={avgUpsampling:5.1f}"
+            "Wrote %s frames and returning %s frame times.\nAverage upsampling factor=%s",
+            nFramesWritten,
+            nTimePoints,
+            avgUpsampling,
         )
         return interpTimes, avgUpsampling
 
@@ -568,7 +586,7 @@ class SuperSloMo:
         data_path: str
             path of the folder which contains input images.
 
-        Returns
+        Returns:
         -------
         List[str]
             sorted in numerical order.
@@ -594,7 +612,7 @@ class SuperSloMo:
         path: str
             path of image.
 
-        Return
+        Return:
         ------
             np.ndarray
         """
@@ -611,7 +629,7 @@ class SuperSloMo:
         ts: np.array, np.float64,
             timestamps of input frames.
 
-        Returns
+        Returns:
         -------
         np.array, np.float64,
             interpolated timestamps.

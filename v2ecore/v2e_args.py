@@ -2,10 +2,14 @@ import argparse
 import logging
 import os
 import time
-from typing import Optional, Any, List, Union, Tuple, Dict, Iterable
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
 from v2ecore.emulator import EventEmulator
 from v2ecore.renderer import ExposureMode
+
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +76,7 @@ def v2e_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     parser
         the argparse object to be populated with arguments
 
-    Returns
+    Returns:
     -------
      the parser with all the standard v2e arguments
 
@@ -630,7 +634,7 @@ def write_args_info(
     other_args: possible extra arguments\
     command_line: the whole command line
 
-    Returns
+    Returns:
     -------
     full path to file
     """

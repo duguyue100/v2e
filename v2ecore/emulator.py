@@ -10,23 +10,28 @@ import math
 import os
 import pickle
 import random
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
 import cv2
 import numpy as np
-from typing import Optional, List, Dict, Tuple, Any, Callable, Union
 import torch  # https://pytorch.org/docs/stable/torch.html
 from screeninfo import get_monitors
 
-from v2ecore.emulator_utils import (
-    compute_event_map,
-    compute_photoreceptor_noise_voltage,
-    generate_shot_noise,
-    lin_log,
-    low_pass_filter,
-    rescale_intensity_frame,
-    subtract_leak_current,
-)
-from v2ecore.v2e_utils import v2e_quit, video_writer
+from v2ecore.emulator_utils import compute_event_map
+from v2ecore.emulator_utils import compute_photoreceptor_noise_voltage
+from v2ecore.emulator_utils import generate_shot_noise
+from v2ecore.emulator_utils import lin_log
+from v2ecore.emulator_utils import low_pass_filter
+from v2ecore.emulator_utils import rescale_intensity_frame
+from v2ecore.emulator_utils import subtract_leak_current
+from v2ecore.v2e_utils import v2e_quit
+from v2ecore.v2e_utils import video_writer
+
 
 # import rosbag # not yet for python 3
 
@@ -78,7 +83,7 @@ class EventEmulator:
         tau:Optional[Tensor]
             if None, tau is set internally
 
-        Returns
+        Returns:
         -------
         the time derivative of the signal
 
@@ -176,8 +181,10 @@ class EventEmulator:
         """
         self.no_events_warning_count = 0
         logger.info(
-            "ON/OFF log_e temporal contrast thresholds: "
-            f"{pos_thres} / {neg_thres} +/- {sigma_thres}"
+            "ON/OFF log_e temporal contrast thresholds: %s / %s +/- %s",
+            pos_thres,
+            neg_thres,
+            sigma_thres,
         )
 
         self.reset()
@@ -276,7 +283,10 @@ class EventEmulator:
             lat_res = 1 / (self.cs_lambda_pixels**2)
             trans_cond = 1 / self.cs_lambda_pixels
             logger.debug(
-                f"lateral resistance R={lat_res:.2g}Ohm, transverse transconductance g={trans_cond:.2g} Siemens, Rg={(lat_res * trans_cond):.2f}"
+                "lateral resistance R=%sOhm, transverse transconductance g=%s Siemens, Rg=%s",
+                lat_res,
+                trans_cond,
+                lat_res * trans_cond,
             )
             self.cs_k_hh = torch.tensor(
                 [[[[0, 1, 0], [1, -4, 1], [0, 1, 0]]]], dtype=torch.float32
@@ -285,10 +295,10 @@ class EventEmulator:
             #                                [0, 1, 0],
             #                                [0, 0, 0]]]], dtype=torch.float32).to(self.device)
             logger.info(
-                f"Center-surround parameters:\n\t"
-                f"cs_tau_p_ms: {self.cs_tau_p_ms}\n\t"
-                f"cs_tau_h_ms:  {self.cs_tau_h_ms}\n\t"
-                f"cs_lambda_pixels:  {self.cs_lambda_pixels:.2f}\n\t"
+                "Center-surround parameters:\n\tcs_tau_p_ms: %s\n\tcs_tau_h_ms:  %s\n\tcs_lambda_pixels:  %s\n\t",
+                self.cs_tau_p_ms,
+                self.cs_tau_h_ms,
+                self.cs_lambda_pixels,
             )
 
         # label signal and noise events
@@ -346,7 +356,7 @@ class EventEmulator:
                     self.screen_width = int(m.width)
                     self.screen_height = int(m.height)
         except Exception as e:
-            logger.warning(f"cannot get screen size for window placement: {e}")
+            logger.warning("cannot get screen size for window placement: %s", e)
 
         if (
             self.show_dvs_model_state is not None
@@ -354,7 +364,8 @@ class EventEmulator:
             and self.show_dvs_model_state[0] == "all"
         ):
             logger.info(
-                f"will show all model states that exist from {EventEmulator.MODEL_STATES.keys()}"
+                "will show all model states that exist from %s",
+                EventEmulator.MODEL_STATES.keys(),
             )
             self.show_dvs_model_state = EventEmulator.MODEL_STATES.keys()
 
@@ -370,11 +381,14 @@ class EventEmulator:
             std_steps = np.std(self.cs_steps_taken)
             median_steps = np.median(self.cs_steps_taken)
             logger.info(
-                f"CSDVS steps statistics: mean+std= {mean_staps:.0f} + {std_steps:.0f} (median= {median_steps:.0f})"
+                "CSDVS steps statistics: mean+std= %s + %s (median= %s)",
+                mean_staps,
+                std_steps,
+                median_steps,
             )
 
         for vw in self.video_writers:
-            logger.info(f"closing video AVI {vw}")
+            logger.info("closing video AVI %s", vw)
             self.video_writers[vw].release()
 
         if self.record_single_pixel_states is not None:
@@ -387,10 +401,12 @@ class EventEmulator:
                     self.single_pixel_states, outfile, protocol=pickle.HIGHEST_PROTOCOL
                 )
                 logger.info(
-                    f"saved single pixel states with {self.single_pixel_sample_count} samples to {self.SINGLE_PIXEL_STATES_FILENAME}"
+                    "saved single pixel states with %s samples to %s",
+                    self.single_pixel_sample_count,
+                    self.SINGLE_PIXEL_STATES_FILENAME,
                 )
         except Exception as e:
-            logger.error(f"could not save pickled pixel states, got {e}")
+            logger.error("could not save pickled pixel states, got %s", e)
 
     def _init(self, first_frame_linear: Any) -> None:
         """
@@ -400,7 +416,7 @@ class EventEmulator:
         first_frame_linear: Any
             the first frame, used to initialize data structures
 
-        Returns
+        Returns:
         -------
             new instance
         -------
@@ -508,19 +524,19 @@ class EventEmulator:
             #      "dvs_params {} not known: "
             #      "use 'clean' or 'noisy'".format(model))
             logger.warning(
-                f"dvs_params {model} not known: Using commandline assigned options"
+                "dvs_params %s not known: Using commandline assigned options", model
             )
             #  sys.exit(1)
         logger.info(
-            f"set DVS model params with option '{model}' "
-            "to following values:\n"
-            f"pos_thres={self.pos_thres}\n"
-            f"neg_thres={self.neg_thres}\n"
-            f"sigma_thres={self.sigma_thres}\n"
-            f"cutoff_hz={self.cutoff_hz}\n"
-            f"leak_rate_hz={self.leak_rate_hz}\n"
-            f"shot_noise_rate_hz={self.shot_noise_rate_hz}\n"
-            f"refractory_period_s={self.refractory_period_s}"
+            "set DVS model params with option '%s' to following values:\npos_thres=%s\nneg_thres=%s\nsigma_thres=%s\ncutoff_hz=%s\nleak_rate_hz=%s\nshot_noise_rate_hz=%s\nrefractory_period_s=%s",
+            model,
+            self.pos_thres,
+            self.neg_thres,
+            self.sigma_thres,
+            self.cutoff_hz,
+            self.leak_rate_hz,
+            self.shot_noise_rate_hz,
+            self.refractory_period_s,
         )
 
     def reset(self) -> None:
@@ -557,7 +573,7 @@ class EventEmulator:
         inp: the array
         name: label for window
 
-        Returns
+        Returns:
         -------
         None
         """
@@ -616,7 +632,7 @@ class EventEmulator:
         t_frame: float
             timestamp of new frame in float seconds
 
-        Returns
+        Returns:
         -------
         events: Any if any events, else None
             [N, 4], each row contains [timestamp, x coordinate, y coordinate, sign of event (+1 ON, -1 OFF)].
@@ -776,7 +792,7 @@ class EventEmulator:
                 if s not in self.dont_show_list:
                     f = getattr(self, s, None)
                     if f is None:
-                        logger.error(f"{s} does not exist so we cannot show it")
+                        logger.error("%s does not exist so we cannot show it", s)
                         self.dont_show_list.append(s)
                     else:
                         self._show(f, s)  # show the frame f with name s
@@ -798,7 +814,8 @@ class EventEmulator:
         )  # turn singleton tensor to scalar
         if max_num_events_any_pixel > 100:
             logger.warning(
-                f"Too many events generated for this frame: num_iter={max_num_events_any_pixel}>100 events"
+                "Too many events generated for this frame: num_iter=%s>100 events",
+                max_num_events_any_pixel,
             )
 
         # to assemble all events
@@ -836,7 +853,9 @@ class EventEmulator:
 
         if max_num_events_any_pixel == 0 and self.no_events_warning_count < 100:
             logger.warning(
-                f"no signal events generated for frame #{self.frame_counter:,} at t={t_frame:.4f}s"
+                "no signal events generated for frame #%s at t=%ss",
+                self.frame_counter,
+                t_frame,
             )
             self.no_events_warning_count += 1
             # max_num_events_any_pixel = 1
@@ -958,7 +977,7 @@ class EventEmulator:
                 events = torch.cat(
                     (events, shot_noise_events), dim=0
                 )  # stack signal events before noise events, [N,4]
-                num_total_events = len(events)
+                len(events)
                 # idx = torch.randperm(num_total_events)  # makes timestamps nonmonotonic
                 # events = events[idx].view(events.size())
                 if self.label_signal_noise:
@@ -994,7 +1013,7 @@ class EventEmulator:
             timestamps = events[:, 0]
             if np.any(np.diff(timestamps) < 0):
                 idx = np.argwhere(np.diff(timestamps) < 0)
-                logger.warning(f"nonmonotonic timestamp(s) at indices {idx}")
+                logger.warning("nonmonotonic timestamp(s) at indices %s", idx)
             if signnoise_label is not None:
                 signnoise_label = signnoise_label.cpu().numpy()
         if self.record_single_pixel_states is not None:
@@ -1004,7 +1023,7 @@ class EventEmulator:
             ):
                 k = self.single_pixel_sample_count
                 if k % 250 == 0:
-                    logger.info(f"recorded {k} single pixel states")
+                    logger.info("recorded %s single pixel states", k)
                 self.single_pixel_states["time"][k] = t_frame
                 self.single_pixel_states["new_frame"][k] = new_frame[
                     self.record_single_pixel_states
@@ -1133,12 +1152,14 @@ class EventEmulator:
             if num_steps > 1000 and not self.cs_steps_warning_printed:
                 if self.cs_tau_p_ms == 0:
                     logger.warning(
-                        f"You set time constant cs_tau_p_ms to zero which set the minimum tau of {abs_min_tau_p}s"
+                        "You set time constant cs_tau_p_ms to zero which set the minimum tau of %ss",
+                        abs_min_tau_p,
                     )
                 logger.warning(
-                    f"CSDVS timestepping of diffuser could take up to {num_steps} "
-                    f"steps per frame for Euler delta time {actual_delta_time:.3g}s; "
-                    f"simulation of each frame will terminate when max change is smaller than {EventEmulator.MAX_CHANGE_TO_TERMINATE_EULER_SURROUND_STEPPING}"
+                    "CSDVS timestepping of diffuser could take up to %s steps per frame for Euler delta time %ss; simulation of each frame will terminate when max change is smaller than %s",
+                    num_steps,
+                    actual_delta_time,
+                    EventEmulator.MAX_CHANGE_TO_TERMINATE_EULER_SURROUND_STEPPING,
                 )
                 self.cs_steps_warning_printed = True
 
@@ -1146,8 +1167,9 @@ class EventEmulator:
             alpha_h = actual_delta_time / tau_h
             if alpha_p >= 1 or alpha_h >= 1:
                 logger.error(
-                    f"CSDVS update alpha (of IIR update) is too large; simulation would explode: "
-                    f"alpha_p={alpha_p:.3f} alpha_h={alpha_h:.3f}"
+                    "CSDVS update alpha (of IIR update) is too large; simulation would explode: alpha_p=%s alpha_h=%s",
+                    alpha_p,
+                    alpha_h,
                 )
                 self.cs_alpha_warning_printed = True
                 v2e_quit(  # type: ignore
@@ -1155,8 +1177,9 @@ class EventEmulator:
                 )
             if alpha_p > 0.25 or alpha_h > 0.25:
                 logger.warning(
-                    f"CSDVS update alpha (of IIR update) is too large; simulation will be inaccurate: "
-                    f"alpha_p={alpha_p:.3f} alpha_h={alpha_h:.3f}"
+                    "CSDVS update alpha (of IIR update) is too large; simulation will be inaccurate: alpha_p=%s alpha_h=%s",
+                    alpha_p,
+                    alpha_h,
                 )
                 self.cs_alpha_warning_printed = True
             p_ten = torch.unsqueeze(torch.unsqueeze(self.lp_log_frame, 0), 0)

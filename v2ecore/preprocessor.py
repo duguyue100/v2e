@@ -17,11 +17,7 @@ class VideoPreprocessor:
         self.crop = crop
 
     def process(
-        self,
-        cap: cv2.VideoCapture,
-        start_frame: int,
-        stop_frame: int,
-        temp_dir: Path,
+        self, cap: cv2.VideoCapture, start_frame: int, stop_frame: int, temp_dir: Path
     ) -> int:
         """Read, crop, resize, RGB->luma, save as .npy. Return frame count."""
         # TODO: Implement full extraction logic
