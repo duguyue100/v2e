@@ -1,7 +1,7 @@
 import argparse
 import logging
-import os
 import sys
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import matplotlib.pyplot as plt
@@ -104,9 +104,9 @@ if __name__ == "__main__":
 
     rotate180 = args.rotate180
     preview = not args.no_preview
-    assert os.path.exists(input_file)
+    assert Path(input_file).exists()
     assert args.start is None or args.stop is None or args.start < args.stop
-    assert os.path.exists(args.slomo_model)
+    assert Path(args.slomo_model).exists()
 
     if args.x is None:
         args.x = tuple(0, DVS_WIDTH)  # type: ignore
@@ -124,7 +124,7 @@ if __name__ == "__main__":
     output_folder = args.output_folder
     Path(output_folder).mkdir(parents=True, exist_ok=True)
 
-    slomoVideoFile = os.path.join(output_folder, "slomo.avi")
+    slomoVideoFile = Path(output_folder) / "slomo.avi"
     if Path(slomoVideoFile).exists():
         logger.info("%s already exists, will use frames from it", slomoVideoFile)
     else:
@@ -234,18 +234,18 @@ if __name__ == "__main__":
     print(f"thres_on={pos_thres:.2f} thres_off={neg_thres:.2f}")
 
     results = np.stack((thresholds, on_diffs, off_diffs), axis=0)
-    path = os.path.join(output_folder, "find_thresholds.npy")
+    path = Path(output_folder) / "find_thresholds.npy"
     np.save(path, results)
 
-    path = os.path.join(output_folder, "find_thresholds.pdf")
+    path = Path(output_folder) / "find_thresholds.pdf"
     fig.savefig(path)
-    path = os.path.join(output_folder, "find_thresholds.png")
+    path = Path(output_folder) / "find_thresholds.png"
     fig.savefig(path)
     logger.info("saved results to %s", output_folder)
 
     plt.show()
     try:
-        desktop.open(os.path.abspath(output_folder))
+        desktop.open(Path(output_folder).resolve())
     except Exception as e:
         logger.warning("%s: could not open %s in desktop", e, output_folder)
     slomo.cleanup()

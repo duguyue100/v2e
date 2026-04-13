@@ -1,7 +1,7 @@
 import atexit
 import logging
-import os
 from enum import Enum
+from pathlib import Path
 from typing import Any
 from typing import Optional
 from typing import Tuple
@@ -149,17 +149,20 @@ class EventRenderer(object):
 
         if self.output_path and type(self.video_output_file_name) is str:
             fn = checkAddSuffix(
-                os.path.join(self.output_path, self.video_output_file_name), ".avi"
+                Path(self.output_path) / self.video_output_file_name, ".avi"
             )
-            logger.info("opening DVS video output file " + fn)
+            logger.info("opening DVS video output file %s", str(fn))
             self.video_output_file = video_writer(
-                fn, self.height, self.width, frame_rate=self.avi_frame_rate
+                fn,  # type: ignore
+                self.height,
+                self.width,
+                frame_rate=self.avi_frame_rate,
             )
             fn = checkAddSuffix(
-                os.path.join(self.output_path, self.video_output_file_name),
+                Path(self.output_path) / self.video_output_file_name,
                 self.dvs_frame_times_suffix,
             )
-            logger.info("opening DVS frame times file " + fn)
+            logger.info("opening DVS frame times file %s", str(fn))
             self.frame_times_output_file = open(fn, "w")
             s = "# frame times for {}\n# frame# time(s)\n".format(
                 self.video_output_file_name

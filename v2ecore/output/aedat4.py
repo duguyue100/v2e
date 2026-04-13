@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from typing import Any
 
 import dv_processing
@@ -15,7 +16,7 @@ class Aedat4EventWriter:
     """outputs AEDAT-4.0 jAER format DVS data from v2e"""
 
     def __init__(
-        self, filepath: str, output_width: int = 640, output_height: int = 480
+        self, filepath: Path, output_width: int = 640, output_height: int = 480
     ) -> None:
         self.filepath = filepath
         self.numEventsWritten = 0
@@ -103,7 +104,7 @@ class Aedat4EventWriter:
 if __name__ == "__main__":
 
     class Aedat4EventWriterTt:
-        f = Aedat4EventWriter("aedattest.aedat4")
+        f = Aedat4EventWriter("aedattest.aedat4")  # type: ignore
         e = [
             [1, 400, 0, 0],
             [2, 0, 400, 0],

@@ -12,6 +12,7 @@ import glob
 import logging
 import os
 import warnings
+from pathlib import Path
 from typing import Any
 from typing import List
 from typing import Optional
@@ -174,7 +175,7 @@ class SuperSloMo:
         return to_tensor, to_image
 
     def __load_data(
-        self, source_frame_path: str, frame_size: Tuple[int, int]
+        self, source_frame_path: Path, frame_size: Tuple[int, int]
     ) -> Tuple["torch.utils.data.DataLoader[Any]", Tuple[int, int], Tuple[int, int]]:
         """Return a Dataloader instance, which is constructed with \
             APS frames.
@@ -215,7 +216,7 @@ class SuperSloMo:
         warpper: nn.Module
         interpolator: nn.Module
         """
-        if not os.path.isfile(self.checkpoint):
+        if not Path(self.checkpoint).is_file():
             raise FileNotFoundError(
                 "SuperSloMo model checkpoint "
                 + str(self.checkpoint)
@@ -247,7 +248,7 @@ class SuperSloMo:
         return flow_estimator, warper, interpolator
 
     def interpolate(
-        self, source_frame_path: str, output_folder: str, frame_size: Tuple[int, int]
+        self, source_frame_path: Path, output_folder: Path, frame_size: Tuple[int, int]
     ) -> Tuple["np.ndarray[Any, Any]", float]:
         """Run interpolation. \
             Interpolated frames will be saved in folder self.output_folder.
@@ -318,7 +319,7 @@ class SuperSloMo:
             and self.ori_writer is None
         ):
             self.ori_writer = video_writer(
-                os.path.join(self.video_path, self.vid_orig),
+                Path(self.video_path) / self.vid_orig,
                 ori_dim[1],
                 ori_dim[0],
                 frame_rate=self.avi_frame_rate,
@@ -330,7 +331,7 @@ class SuperSloMo:
             and self.slomo_writer is None
         ):
             self.slomo_writer = video_writer(
-                os.path.join(self.video_path, self.vid_slomo),
+                Path(self.video_path) / self.vid_slomo,
                 ori_dim[1],
                 ori_dim[0],
                 frame_rate=self.avi_frame_rate,
@@ -340,7 +341,7 @@ class SuperSloMo:
 
         # prepare preview
         if self.preview:
-            self.name = os.path.basename(str(__file__))
+            self.name = Path(str(__file__)).name
             cv2.namedWindow(self.name, cv2.WINDOW_NORMAL)
 
         outputFrameCounter = 0  # counts frames written out (input + interpolated)
@@ -514,9 +515,7 @@ class SuperSloMo:
                             + upsampling_factor * batchIndex
                             + intermediateIndex
                         )
-                        save_path = os.path.join(
-                            output_folder, str(outputFrameIdx) + ".png"
-                        )
+                        save_path = Path(output_folder) / str(outputFrameIdx) + ".png"  # type: ignore
                         img_resize.save(save_path)
 
                 # for preview
@@ -527,9 +526,7 @@ class SuperSloMo:
                         start_frame_count,
                         stop_frame_count + upsampling_factor * (num_batch_frames - 1),
                     ):
-                        frame_path = os.path.join(
-                            output_folder, str(frame_idx) + ".png"
-                        )
+                        frame_path = Path(output_folder) / str(frame_idx) + ".png"  # type: ignore
                         frame = cv2.imread(frame_path)
                         cv2.imshow(self.name, frame)
                         if not self.preview_resized:
@@ -577,7 +574,7 @@ class SuperSloMo:
         )
         return interpTimes, avgUpsampling
 
-    def __all_images(self, data_path: str) -> List[str]:
+    def __all_images(self, data_path: Path) -> List[str]:
         """Return path of all input images. Assume that the ascending order of
         file names is the same as the order of time sequence.
 
@@ -591,20 +588,20 @@ class SuperSloMo:
         List[str]
             sorted in numerical order.
         """
-        images = glob.glob(os.path.join(data_path, "*.png"))
+        images = list(Path(data_path).glob("*.png"))
         if len(images) == 0:
             raise ValueError("Input folder is empty or images are not in 'png' format.")
         images_sorted = sorted(
-            images, key=lambda line: int(line.split(os.sep)[-1].split(".")[0])
+            images, key=lambda line: int(line.name.split(os.sep)[-1].split(".")[0])
         )
         # only works for linux separators with /,
         # use os.sep according to
         # https://stackoverflow.com/questions/16010992
         # /how-to-use-directory-separator-in-both-linux-and-windows-in-python
-        return images_sorted
+        return [str(p) for p in images_sorted]
 
     @staticmethod
-    def __read_image(path: str) -> "np.ndarray[Any, Any]":
+    def __read_image(path: Path) -> "np.ndarray[Any, Any]":
         """Read image.
 
         Parameters
@@ -616,7 +613,7 @@ class SuperSloMo:
         ------
             np.ndarray
         """
-        img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+        img = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
         return img
 
     def get_interpolated_timestamps(

@@ -64,7 +64,10 @@ class SyntheticInput:  # the class name should be the same as the filename, like
             if not avi_path.endswith("avi"):
                 avi_path = avi_path + ".avi"
             self.video_writer: video_writer = video_writer(  # type: ignore
-                output_path=avi_path, width=width, height=height, frame_rate=30
+                output_path=avi_path,  # type: ignore
+                width=width,
+                height=height,
+                frame_rate=30,
             )
             logger.info("Writing synthetic input frame video to %s", avi_path)
         atexit.register(self.cleanup)
@@ -83,19 +86,6 @@ class SyntheticInput:  # the class name should be the same as the filename, like
             time is in float seconds.
         """
         return (self.pix_arr, self.time)
-
-    def write_video_frame(self, frame=None):  # type: ignore
-        """Writes the current self.pix_array to video output file as source frames
-        :param frame
-            the frame, or None to write self.pix_arr
-        :returns: None
-        """
-        if self.video_writer is not None:
-            self.video_writer.write(
-                cv2.cvtColor(
-                    frame if frame is not None else self.pix_arr, cv2.COLOR_GRAY2BGR
-                )
-            )
 
     def cleanup(self) -> None:
         if self.video_writer is not None:

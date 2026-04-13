@@ -484,10 +484,6 @@ class Menu(Simple):
         self.items = items or []
         self.list_height = list_height
 
-    def add(self, *args, **kw):
-        """Add an item, passing the given arguments to the appropriate item class."""
-        self.items.append(self.item(*args, **kw))
-
 
 class RadioList(Menu):
     """

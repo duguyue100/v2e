@@ -26,16 +26,6 @@ class Monitor(mp.Process):
         # self.daemon = True
         self.start()
 
-    def run(self):
-        self.source.start()
-        # self.source.join()
-        while not self.exit.is_set():
-            try:
-                time.sleep(1e-5)
-            except KeyboardInterrupt:
-                self.source.stop()
-                self.exit.set()
-
     def receive(self, message, **kwargs):
         """Receive single message from interface"""
         if self.exit.is_set():

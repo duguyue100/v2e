@@ -7,8 +7,8 @@ In each action class, one video is randomly selected.
 """
 
 import argparse
-import os
 import shutil
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import cv2
@@ -54,11 +54,11 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if not os.path.exists(args.output_dir):
-        os.mkdir(args.output_dir)
+    if not Path(args.output_dir).exists():
+        Path(args.output_dir).mkdir()
 
-    if not os.path.exists(args.output_dir):
-        os.mkdir(args.output_dir)
+    if not Path(args.output_dir).exists():
+        Path(args.output_dir).mkdir()
 
     # load frames from the input video.
     frames = []
@@ -104,9 +104,7 @@ if __name__ == "__main__":
                 interpolated_ts,
                 args.pos_thres,
                 args.neg_thres,
-                os.path.join(
-                    args.output_dir, f"interpolated_{int(factor * fps):d}.avi"
-                ),
+                Path(args.output_dir) / f"interpolated_{int(factor * fps):d}.avi",
             )
 
             r_input = ImageSequenceArray2EventsRenderer(
@@ -115,7 +113,7 @@ if __name__ == "__main__":
                 input_ts,
                 args.pos_thres,
                 args.neg_thres,
-                os.path.join(args.output_dir, f"input_{int(factor * fps):d}.avi"),
+                Path(args.output_dir) / f"input_{int(factor * fps):d}.avi",
             )
 
             _ = r_slomo.render(height, width)

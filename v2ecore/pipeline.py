@@ -47,14 +47,14 @@ class V2EPipeline:
             from v2ecore.output.hdf5 import Hdf5EventWriter
 
             writers.append(
-                Hdf5EventWriter(str(output_config.output_folder / output_config.dvs_h5))
+                Hdf5EventWriter(str(output_config.output_folder / output_config.dvs_h5))  # type: ignore
             )
         if output_config.dvs_text:
             from v2ecore.output.text import TextEventWriter
 
             writers.append(
                 TextEventWriter(
-                    str(output_config.output_folder / output_config.dvs_text)
+                    str(output_config.output_folder / output_config.dvs_text)  # type: ignore
                 )
             )
         if output_config.dvs_aedat2:
@@ -62,7 +62,7 @@ class V2EPipeline:
 
             writers.append(
                 Aedat2EventWriter(
-                    str(output_config.output_folder / output_config.dvs_aedat2)
+                    str(output_config.output_folder / output_config.dvs_aedat2)  # type: ignore
                 )
             )
         if output_config.dvs_aedat4:
@@ -70,7 +70,7 @@ class V2EPipeline:
 
             writers.append(
                 Aedat4EventWriter(
-                    str(output_config.output_folder / output_config.dvs_aedat4)
+                    str(output_config.output_folder / output_config.dvs_aedat4)  # type: ignore
                 )
             )
         return CompositeEventWriter(writers)

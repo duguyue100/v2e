@@ -1,5 +1,6 @@
 import atexit
 import logging
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -18,7 +19,7 @@ class Aedat2EventWriter:
 
     def __init__(
         self,
-        filepath: str,
+        filepath: Path,
         output_width: int = 346,
         output_height: int = 260,
         label_signal_noise: bool = False,

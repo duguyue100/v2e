@@ -9,7 +9,6 @@ GNU LESSER GENERAL PUBLIC LICENSE Version 3.
 """
 
 import multiprocessing as mp
-import queue
 import socket
 import struct
 import time
@@ -141,16 +140,6 @@ class Monitor(mp.Process):
         # self.daemon = True
         self.start()
 
-    def run(self):
-        while not self.exit.is_set():
-            try:
-                self.q.put_nowait(self._get())
-                self.qsize = max(self.qsize, self.q.qsize())
-            except queue.Full:
-                raise queue.Full("caer buffer overflow")
-            except KeyboardInterrupt:
-                self.exit.set()
-
     def _get(self):
         # read packet header
         data = {"dvs_header": self.sock.recv(28, socket.MSG_WAITALL)}
@@ -163,12 +152,6 @@ class Monitor(mp.Process):
 
     def get(self):
         return self.q.get_nowait() if not self.q.empty() else False
-
-    def get_events(self):
-        return unpack_events(self.get())
-
-    def shutdown(self):
-        self.exit.set()
 
 
 class Controller:

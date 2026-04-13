@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 import time
+from pathlib import Path
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -17,8 +18,8 @@ logger = logging.getLogger(__name__)
 NO_SLOWDOWN = 1
 
 
-def expandpath(path: str) -> str:
-    return os.path.abspath(os.path.expandvars(os.path.expanduser(path)))
+def expandpath(path: str) -> Path:
+    return Path(os.path.expandvars(Path(path).expanduser())).resolve()
 
 
 def output_file_check(arg: str) -> Optional[str]:
@@ -81,7 +82,7 @@ def v2e_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
      the parser with all the standard v2e arguments
 
     """
-    v2ecore_path = os.path.dirname(__file__)
+    v2ecore_path = Path(__file__).parent
 
     # general arguments for output folder, overwriting, etc
     outGroupGeneral = parser.add_argument_group("Output: General")
@@ -343,7 +344,7 @@ def v2e_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     sloMoGroup.add_argument(
         "--slomo_model",
         type=expandpath,
-        default=os.path.join(v2ecore_path, "../input/SuperSloMo39.ckpt"),
+        default=Path(v2ecore_path) / "../input/SuperSloMo39.ckpt",
         help="path of slomo_model checkpoint.",
     )
     sloMoGroup.add_argument(
@@ -620,7 +621,7 @@ def v2e_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
 
 def write_args_info(
     args: argparse.Namespace,
-    path: str,
+    path: Path,
     other_args: Optional[List[str]] = None,
     command_line: Optional[str] = None,
 ) -> str:
@@ -651,16 +652,16 @@ def write_args_info(
             other_arguments_list += f"{arg}\n"
         logger.warning(other_arguments_list)
         time.sleep(2)
-    basename = os.path.basename(__main__.__file__)
+    basename = Path(__main__.__file__).name
     argsFilename = basename.strip(".py") + "-args.txt"
-    filepath = os.path.join(path, argsFilename)
+    filepath = Path(path) / argsFilename
     with open(filepath, "w") as f:
         f.write(arguments_list)
         if other_arguments_list is not None:
             f.write(other_arguments_list)
         if command_line is not None:
             f.write("\n*** command line:\n" + command_line)
-    return filepath
+    return str(filepath)
 
 
 def v2e_check_dvs_exposure_args(

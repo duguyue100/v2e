@@ -6,6 +6,7 @@
 """
 
 import glob
+from pathlib import Path
 from typing import Any
 from typing import Callable
 from typing import List
@@ -96,7 +97,7 @@ class FramesDirectory(data.Dataset[Any]):  # type: ignore
 
     def __init__(
         self,
-        folder_path: str,
+        folder_path: Path,
         ori_dim: Tuple[int, int],
         parsing: str = "/*.npy",
         transform: Optional[Callable[..., Any]] = None,

@@ -118,18 +118,18 @@ def filter_frame(d):  # type: ignore
 if __name__ == "__main__":
     overwrite = args.overwrite
     output_folder = args.output_folder
-    f = not overwrite and os.path.exists(output_folder) and os.listdir(output_folder)
+    f = not overwrite and Path(output_folder).exists() and os.listdir(output_folder)
     if f:
         logger.error(
             "output folder %s already exists\n it holds files %s\n - use --overwrite",
-            os.path.abspath(output_folder),
+            Path(output_folder).resolve(),
             f,
         )
         quit()
 
-    if not os.path.exists(output_folder):
+    if not Path(output_folder).exists():
         logger.info("making output folder %s", output_folder)
-        os.mkdir(output_folder)
+        Path(output_folder).mkdir()
 
     input_file = args.input
     if not input_file:
@@ -143,7 +143,7 @@ if __name__ == "__main__":
         arguments_list += f"{arg}:\t{value}\n"
     logger.info(arguments_list)
 
-    with open(os.path.join(args.output_folder, "info.txt"), "w") as f:  # type: ignore
+    with open(Path(args.output_folder) / "info.txt", "w") as f:  # type: ignore
         f.write(arguments_list)  # type: ignore
 
     start_time = args.start_time
@@ -208,7 +208,7 @@ if __name__ == "__main__":
             events[:, 0] = events[:, 0] * 1e-6  # us timestamps
             if realDvsAeDatOutput is None:
                 filename = PurePath(input_file).name.replace(".hdf5", ".aedat")
-                filepath = os.path.join(output_folder, filename)
+                filepath = Path(output_folder) / filename
                 realDvsAeDatOutput = AEDat2Output(
                     filepath, output_width=output_width, output_height=output_height
                 )
@@ -221,7 +221,7 @@ if __name__ == "__main__":
                 h, w = img.shape[0], img.shape[1]
                 if not videoWriter:
                     filename = PurePath(input_file).name.replace(".hdf5", ".avi")
-                    filepath = os.path.join(output_folder, filename)
+                    filepath = Path(output_folder) / filename
                     videoWriter = video_writer(filepath, height=h, width=w)
                 videoWriter.write(cv2.cvtColor(img, cv2.COLOR_GRAY2BGR))
 
@@ -243,7 +243,7 @@ if __name__ == "__main__":
         )
     logger.info("done; see output folder " + str(args.output_folder))
     try:
-        desktop.open(os.path.abspath(output_folder))  # type: ignore
+        desktop.open(Path(output_folder).resolve())  # type: ignore
     except Exception as e:
         logger.warning("%s: could not open %s in desktop", e, output_folder)
     quit()

@@ -10,6 +10,7 @@ import argparse
 import os
 import random
 import shutil
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import cv2
@@ -53,16 +54,16 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if not os.path.exists(args.output):
-        os.mkdir(args.output)
+    if not Path(args.output).exists():
+        Path(args.output).mkdir()
 
     classes = os.listdir(args.dataset)
 
     for i, action in enumerate(classes):
-        candidates = os.listdir(os.path.join(args.dataset, action))
-        video = os.path.join(args.dataset, action, random.choice(candidates))
-        output_path = os.path.join(args.output, action)
-        os.mkdir(output_path)
+        candidates = os.listdir(Path(args.dataset) / action)
+        video = Path(args.dataset) / action / random.choice(candidates)
+        output_path = Path(args.output) / action
+        Path(output_path).mkdir()
         print(f"{i:d} - Action: {action:s}\nVideo: {video:s}")
 
         # load frames from the input video.
@@ -111,7 +112,7 @@ if __name__ == "__main__":
                     interpolated_ts,
                     args.pos_thres,
                     args.neg_thres,
-                    os.path.join(output_path, f"from_image_{int(factor * fps):d}.avi"),
+                    Path(output_path) / f"from_image_{int(factor * fps):d}.avi",
                 )
 
                 _ = r.render(height, width)

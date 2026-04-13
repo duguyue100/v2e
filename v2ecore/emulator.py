@@ -10,6 +10,7 @@ import math
 import os
 import pickle
 import random
+from pathlib import Path
 from typing import Any
 from typing import Dict
 from typing import List
@@ -496,49 +497,6 @@ class EventEmulator:
                 - self.refractory_period_s
             )
 
-    def set_dvs_params(self, model: str) -> None:
-        if model == "clean":
-            self.pos_thres = 0.2
-            self.neg_thres = 0.2
-            self.sigma_thres = 0.02
-            self.cutoff_hz = 0
-            self.leak_rate_hz = 0
-            self.leak_jitter_fraction = 0
-            self.noise_rate_cov_decades = 0
-            self.shot_noise_rate_hz = 0  # rate in hz of temporal noise events
-            self.refractory_period_s = 0
-
-        elif model == "noisy":
-            self.pos_thres = 0.2
-            self.neg_thres = 0.2
-            self.sigma_thres = 0.05
-            self.cutoff_hz = 30
-            self.leak_rate_hz = 0.1
-            # rate in hz of temporal noise events
-            self.shot_noise_rate_hz = 5.0
-            self.refractory_period_s = 0
-            self.leak_jitter_fraction = 0.1
-            self.noise_rate_cov_decades = 0.1
-        else:
-            #  logger.error(
-            #      "dvs_params {} not known: "
-            #      "use 'clean' or 'noisy'".format(model))
-            logger.warning(
-                "dvs_params %s not known: Using commandline assigned options", model
-            )
-            #  sys.exit(1)
-        logger.info(
-            "set DVS model params with option '%s' to following values:\npos_thres=%s\nneg_thres=%s\nsigma_thres=%s\ncutoff_hz=%s\nleak_rate_hz=%s\nshot_noise_rate_hz=%s\nrefractory_period_s=%s",
-            model,
-            self.pos_thres,
-            self.neg_thres,
-            self.sigma_thres,
-            self.cutoff_hz,
-            self.leak_rate_hz,
-            self.shot_noise_rate_hz,
-            self.refractory_period_s,
-        )
-
     def reset(self) -> None:
         """Resets so that next use will reinitialize the base frame"""
         self.num_events_total = 0
@@ -593,7 +551,7 @@ class EventEmulator:
             )
             self.show_list.append(name)
             if self.save_dvs_model_state:
-                fn = os.path.join(str(self.output_folder), name + ".avi")
+                fn = Path(str(self.output_folder)) / name + ".avi"
                 vw = video_writer(  # type: ignore
                     fn, self.output_height, self.output_width
                 )
@@ -1228,7 +1186,7 @@ if __name__ == "__main__":
         device="cuda",
     )
 
-    cap = cv2.VideoCapture(os.path.join(os.environ["HOME"], "v2e_tutorial_video.avi"))
+    cap = cv2.VideoCapture(Path(os.environ["HOME"]) / "v2e_tutorial_video.avi")
 
     # num of frames
     fps = cap.get(cv2.CAP_PROP_FPS)

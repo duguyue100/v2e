@@ -4,7 +4,6 @@ import matplotlib
 matplotlib.use("PS")
 import argparse
 import logging
-import os
 import sys
 from pathlib import Path
 
@@ -85,13 +84,13 @@ if __name__ == "__main__":
         logger.error("input folder %s not accessible", Path(path))
         sys.exit(1)
 
-    dvs_video_real_avi = os.path.join(path, "dvs-video-real.avi")
+    dvs_video_real_avi = Path(path) / "dvs-video-real.avi"
     if not Path(dvs_video_real_avi).exists():
         logger.error("video %s not accessible", dvs_video_real_avi)
         sys.exit(1)
 
-    dvs_v2e_npy = os.path.join(path, "dvs_v2e.npy")
-    dvs_real_npy = os.path.join(path, "dvs_real.npy")
+    dvs_v2e_npy = Path(path) / "dvs_v2e.npy"
+    dvs_real_npy = Path(path) / "dvs_real.npy"
     if not Path(dvs_v2e_npy).exists() or not Path(dvs_real_npy).exists():
         logger.error(
             "numpy event files %s or %s not accessible\nDid you run ddd-v2e.py first?",
@@ -107,7 +106,7 @@ if __name__ == "__main__":
     fps = cap.get(cv2.CAP_PROP_FPS)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    outputVideoPath = os.path.join(path, "ddd_plot_event_counts.avi")
+    outputVideoPath = Path(path) / "ddd_plot_event_counts.avi"
     out = video_writer(outputVideoPath, width=width, height=height)
 
     logger.info(
@@ -201,12 +200,12 @@ if __name__ == "__main__":
     plt.legend()
 
     # save the figure
-    plt.savefig(os.path.join(path, "ddd-plot-event-counts.pdf"))
-    plt.savefig(os.path.join(path, "ddd-plot-event-counts.png"))
+    plt.savefig(Path(path) / "ddd-plot-event-counts.pdf")
+    plt.savefig(Path(path) / "ddd-plot-event-counts.png")
     logger.info("plots written to ddd-plot-event-counts.* in folder %s", path)
     plt.show()
     try:
-        desktop.open(os.path.abspath(path))
+        desktop.open(Path(path).resolve())
     except Exception as e:
         logger.warning("%s: could not open %s in desktop", e, path)
     try:

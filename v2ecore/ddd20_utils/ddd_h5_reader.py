@@ -381,39 +381,6 @@ class HDF5Stream(mp.Process):
         self.daemon = True
         self.start()
 
-    def run(self):
-        while self.blocks_rem and not self.exit.is_set():
-            blocks_read = 0
-            for k in self.blocks_rem.keys():
-                if self.q[k].full():
-                    time.sleep(1e-6)
-                    continue
-                i = self.block_offset[k]
-                self.q[k].put(self.f[k]["data"][i * CHUNK_SIZE : (i + 1) * CHUNK_SIZE])
-                self.block_offset[k] += 1
-                if self.blocks_rem[k].value:
-                    self.blocks_rem[k].value -= 1
-                else:
-                    self.blocks_rem.pop(k)
-                blocks_read += 1
-            if not blocks_read:
-                time.sleep(1e-6)
-            if self.run_search.is_set():
-                self._search()
-        self.f.close()
-        print("closed input file")
-        while not self.exit.is_set():
-            time.sleep(1e-3)
-        # print('[DEBUG] flushing stream queues')
-        for k in self.q:
-            # print('[DEBUG] flushing', k)
-            _flush_q(self.q[k])
-            self.q[k].cleanup()
-            self.q[k].join_thread()
-        # print('[DEBUG] flushed all stream queues')
-        self.done.set()
-        print("stream done")
-
     def get(self, k, block=True, timeout=None):
         return self.q[k].get(block, timeout)
 
@@ -493,41 +460,6 @@ class MergedStream(mp.Process):
         self.exit = mp.Event()
         self.daemon = True
         self.start()
-
-    def run(self):
-        while self.blocks_rem and not self.exit.is_set():
-            # find next event
-            if self.q.full():
-                time.sleep(1e-4)
-                continue
-            next_k = min(self.current_ts, key=self.current_ts.get)
-            self.q.put((self.current_ts[next_k], self.current_dat[next_k]))
-            self._inc_current(next_k)
-            # get new blocks if necessary
-            for k in {k for k in self.blocks_rem if self.i[k] == CHUNK_SIZE}:
-                self.current_blk[k] = self.fbuf.get(k)
-                self.i[k] = 0
-                if self.blocks_rem[k]:
-                    self.blocks_rem[k] -= 1
-                else:
-                    self.blocks_rem.pop(k)
-                    self.current_ts.pop(k)
-            if self.run_search.is_set():
-                self._search()
-        self.fetched_all.set()
-        self.fbuf.exit.set()
-        while not self.fbuf.done.is_set():
-            time.sleep(1)
-            # print('[DEBUG] waiting for stream process')
-        while not self.exit.is_set():
-            time.sleep(1)
-            # print('[DEBUG] waiting for merger process')
-        _flush_q(self.q)
-        # print('[DEBUG] flushed merger q ->', self.q.qsize())
-        self.q.close()
-        self.q.join_thread()
-        # print('[DEBUG] joined merger q')
-        self.done.set()
 
     def close(self):
         self.exit.set()

@@ -7,6 +7,7 @@ Email : yuhuang.hu@ini.uzh.ch
 import argparse
 import glob
 import os
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import numpy as np
@@ -46,10 +47,10 @@ args = parser.parse_args()
 # set fps, use 30
 fps = 30.0
 
-assert os.path.isdir(args.dir)
+assert Path(args.dir).is_dir()
 
-if not os.path.isdir(args.out):
-    os.makedirs(args.out)
+if not Path(args.out).is_dir():
+    Path(args.out).mkdir(parents=True)
 
 # get the list of directory
 collectd_paths = []
@@ -59,10 +60,10 @@ for root, dirs, files in os.walk(args.dir):
 
 for vid_path in collectd_paths:
     # set up output folder
-    base_name = os.path.basename(vid_path)
-    vid_out_path = os.path.join(args.out, base_name)
-    if not os.path.isdir(vid_out_path):
-        os.makedirs(vid_out_path)
+    base_name = Path(vid_path).name
+    vid_out_path = Path(args.out) / base_name
+    if not Path(vid_out_path).is_dir():
+        Path(vid_out_path).mkdir(parents=True)
 
     # get all frames
     file_list = sorted(glob.glob(f"{vid_path}" + "/*.*"))
@@ -93,7 +94,7 @@ for vid_path in collectd_paths:
     input_ts = output_ts = np.linspace(0, num_frames / fps, num_frames, endpoint=False)
 
     # export frame time stamps
-    np.save(os.path.join(vid_out_path, "frame_ts.npy"), input_ts)
+    np.save(Path(vid_out_path) / "frame_ts.npy", input_ts)
 
     with TemporaryDirectory() as dirname:
         print("tmp_dir: ", dirname)
@@ -115,10 +116,10 @@ for vid_path in collectd_paths:
             interpolated_ts,
             args.pos_thres,
             args.neg_thres,
-            os.path.join(vid_out_path, f"interpolated_{int(args.sf*fps):d}.avi"),
+            Path(vid_out_path) / f"interpolated_{int(args.sf*fps):d}.avi",
         )
 
         # generate and save events
         r_slomo.generateEventsFromFramesAndExportEventsToHDF5(
-            os.path.join(vid_out_path, "events.hdf5")
+            Path(vid_out_path) / "events.hdf5"
         )

@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any
 
 import h5py
@@ -6,7 +7,7 @@ import h5py
 class Hdf5EventWriter:
     """Writes events to HDF5 format."""
 
-    def __init__(self, filepath: str) -> None:
+    def __init__(self, filepath: Path) -> None:
         self.filepath = filepath
         self.file = h5py.File(filepath, "w")
         self.dvs_h5_dataset = self.file.create_dataset(

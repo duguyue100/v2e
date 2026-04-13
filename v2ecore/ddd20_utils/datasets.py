@@ -45,25 +45,6 @@ class HDF5(mp.Process):
         self.ptrs = {k: 0 for k in self.datasets}
         self.size = {k: SIZE_INC for k in self.datasets}
 
-    def run(self):
-        self.init_ds()
-        f = open("datasets_ioerrors.txt", "a")
-        while not self.exit.is_set() or not self.q.empty():
-            try:
-                res = self.q.get(False, 1e-3)
-                self._save(res)
-            except queue.Empty:
-                pass
-            except OSError:
-                print("IOError, continuing")
-                f.write(str(res))
-                pass
-            except KeyboardInterrupt:
-                # print('datasets.run got interrupt')
-                self.exit.set()
-        f.cleanup()
-        self.close()
-
     def create_datasets(self, tables, compression=None):
         for tname, ttype in tables.iteritems():
             tname_split = tname.split("/")

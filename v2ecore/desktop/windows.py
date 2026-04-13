@@ -170,15 +170,6 @@ class Window:
 
     # Public methods.
 
-    def children(self, all=0):
-        """
-        Return a list of windows which are children of this window. If the
-        optional 'all' parameter is set to a true value, all such windows will
-        be returned regardless of whether they have any name information.
-        """
-        s = _xwininfo(self.identifier, "children")
-        return self._descendants(s, (all and self.find_all) or self.find_named)
-
     def descendants(self, all=0):
         """
         Return a list of windows which are descendants of this window. If the
@@ -223,11 +214,6 @@ class Window:
         """
         d = _xwininfo(self.identifier, "stats")
         return d["Map State"] != "IsUnviewable"
-
-    def visible(self):
-        """Return whether the window is displayed and visible."""
-        d = _xwininfo(self.identifier, "stats")
-        return d["Map State"] == "IsViewable"
 
 
 def list(desktop=None):

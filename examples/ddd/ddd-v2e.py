@@ -82,18 +82,18 @@ args = parser.parse_args()
 if __name__ == "__main__":
     overwrite = args.overwrite
     output_folder: str = args.output_folder
-    f = not overwrite and os.path.exists(output_folder) and os.listdir(output_folder)
+    f = not overwrite and Path(output_folder).exists() and os.listdir(output_folder)
     if f:
         logger.error(
             "output folder %s already exists\n it holds files %s\n - use --overwrite",
-            os.path.abspath(output_folder),
+            Path(output_folder).resolve(),
             f,
         )
         quit()
 
-    if not os.path.exists(output_folder):
+    if not Path(output_folder).exists():
         logger.info("making output folder %s", output_folder)
-        os.makedirs(output_folder, exist_ok=True)
+        Path(output_folder).mkdir(parents=True, exist_ok=True)
         # os.mkdir(output_folder)
 
     if (args.output_width is not None) ^ (args.output_width is not None):
@@ -118,7 +118,7 @@ if __name__ == "__main__":
             f"only dvs_exposure=duration is currently supported (mode {exposure_mode} not allowed)"
         )
 
-    write_args_info(args, output_folder)
+    write_args_info(args, Path(output_folder))
 
     dvsFps = 1.0 / exposure_val  # type: ignore
     start_time = args.start_time
@@ -265,7 +265,7 @@ if __name__ == "__main__":
                 allEventsReal = np.concatenate((allEventsReal, events))
             if not realDvsAeDatOutput and dvs_aedat2:
                 filepath = checkAddSuffix(
-                    os.path.join(output_folder, dvs_aedat2), ".aedat"
+                    Path(output_folder) / dvs_aedat2, ".aedat"
                 ).replace(".aedat", "-real.aedat")
                 realDvsAeDatOutput = AEDat2Output(filepath)
             if realDvsAeDatOutput:
@@ -354,8 +354,8 @@ if __name__ == "__main__":
                 memoryLimit += 1e9
 
     if output_folder and numpy_output:
-        np.save(os.path.join(output_folder, "dvs_real.npy"), allEventsReal)
-        np.save(os.path.join(output_folder, "dvs_v2e.npy"), allEventsFake)
+        np.save(Path(output_folder) / "dvs_real.npy", allEventsReal)
+        np.save(Path(output_folder) / "dvs_v2e.npy", allEventsFake)
         logger.info("saved numpy files with real and v2e events to %s", output_folder)
 
     logger.info("done; see output folder " + str(args.output_folder))
@@ -387,7 +387,7 @@ if __name__ == "__main__":
         EngNumber(emulator.num_events_off / srcDurationToBeProcessed),
     )
     try:
-        desktop.open(os.path.abspath(output_folder))  # type: ignore
+        desktop.open(Path(output_folder).resolve())  # type: ignore
     except Exception as e:
         logger.warning("%s: could not open %s in desktop", e, output_folder)
     eventRendererFake.cleanup()

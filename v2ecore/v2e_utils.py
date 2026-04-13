@@ -1,4 +1,3 @@
-import glob
 import logging
 import os
 import tempfile
@@ -45,7 +44,7 @@ logger = logging.getLogger(__name__)
 
 
 class ImageFolderReader:
-    def __init__(self, image_folder_path: str, frame_rate: float) -> None:
+    def __init__(self, image_folder_path: Path, frame_rate: float) -> None:
         """ImageFolderReader.
 
         This class implements functions that are similar to
@@ -61,7 +60,7 @@ class ImageFolderReader:
         """
         self.image_folder_path = image_folder_path
 
-        self.image_file_list = sorted(glob.glob(f"{self.image_folder_path}" + "/*.*"))
+        self.image_file_list = sorted(list(Path(self.image_folder_path).glob + "/*.*"))  # type: ignore
 
         self.frame_rate = frame_rate
 
@@ -117,7 +116,7 @@ def v2e_quit(code: int = 0) -> None:
 
 
 def make_output_folder(
-    output_folder_base: str,
+    output_folder_base: Path,
     suffix_counter: int,
     overwrite: bool,
     unique_output_folder: bool,
@@ -137,19 +136,19 @@ def make_output_folder(
         v2e_quit()
 
     output_folder = (
-        output_folder_base + f"-{suffix_counter}"
+        output_folder_base + f"-{suffix_counter}"  # type: ignore
         if suffix_counter > 0
         else output_folder_base
     )
 
     non_empty_folder_exists = (
-        not overwrite and os.path.exists(output_folder) and os.listdir(output_folder)
+        not overwrite and Path(output_folder).exists() and os.listdir(output_folder)
     )
 
     if non_empty_folder_exists and not overwrite and not unique_output_folder:
         logger.error(
             "non-empty output folder %s already exists \n - use --overwrite or --unique_output_folder",
-            os.path.abspath(output_folder),
+            Path(output_folder).resolve(),
         )
         v2e_quit()
 
@@ -159,49 +158,9 @@ def make_output_folder(
         )
     else:
         logger.info("using output folder %s", output_folder)
-        if not os.path.exists(output_folder):
-            os.makedirs(output_folder)
+        if not Path(output_folder).exists():
+            Path(output_folder).mkdir(parents=True)
         return str(output_folder)
-
-
-def set_output_folder(
-    output_folder: Optional[str],
-    input_file: str,
-    unique_output_folder: bool,
-    overwrite: bool,
-    output_in_place: bool,
-    logger: logging.Logger,
-) -> str:
-    """Set output folder in a single function.
-
-    :param output_folder: path to folder, if supplied, otherwise None
-    :param input_file: the input file to v2e, used for output_in_place. If folder, this folder is used.
-    :param overwrite: set true to overwrite existing files in the folder
-    :param output_in_place: set True to output in input_file or input folder folder
-    :param logger: logger to report errors and warnings to
-
-    :returns: the output folder path
-    """
-    if (output_folder is not None) and output_in_place:
-        raise ValueError(
-            f"both output_folder={output_folder} and output_in_place={output_in_place} cannot be set true at same time"
-        )
-
-    if output_in_place:
-        ip = Path(input_file)
-        if ip.is_file():
-            output_folder = str(ip.parent.absolute())
-        elif ip.is_dir():
-            output_folder = str(ip.absolute())
-        logger.info("output_in_place==True so output_folder=%s", output_folder)
-    else:
-        output_folder = make_output_folder(
-            output_folder if output_folder else "", 0, overwrite, unique_output_folder
-        )
-        p = Path(output_folder)
-        logger.info("output_in_place==False so made output_folder=%s", p.absolute())
-
-    return str(output_folder)
 
 
 def set_output_dimension(
@@ -273,17 +232,13 @@ def check_lowpass(cutoffhz: float, fs: float, logger: logging.Logger) -> None:
         )
 
 
-def inputVideoFileDialog() -> str:
-    return _inputFileDialog([("Video/Data files", ".avi .mp4 .wmv"), ("Any type", "*")])
-
-
 def inputDDDFileDialog() -> str:
     return _inputFileDialog([("DDD recordings", ".hdf5"), ("Any type", "*")])
 
 
 def _inputFileDialog(types: List[Tuple[str, str]]) -> str:
     LAST_FILE_NAME_FILE = "v2e_last_file_chosen.txt"
-    fn = os.path.join(tempfile.gettempdir(), LAST_FILE_NAME_FILE)
+    fn = Path(tempfile.gettempdir()) / LAST_FILE_NAME_FILE
     default = None
     try:
         with open(fn) as f:
@@ -309,15 +264,15 @@ def _inputFileDialog(types: List[Tuple[str, str]]) -> str:
     return str(filename) if filename else ""
 
 
-def checkAddSuffix(path: str, suffix: str) -> str:
-    if path.endswith(suffix):
-        return path
+def checkAddSuffix(path: Path, suffix: str) -> str:
+    if str(path).endswith(suffix):
+        return path  # type: ignore
     else:
-        return os.path.splitext(path)[0] + suffix
+        return str(Path(path).with_suffix("")) + suffix
 
 
 def video_writer(
-    output_path: str,
+    output_path: Path,
     height: int,
     width: int,
     frame_rate: float = 30,
@@ -356,7 +311,7 @@ def video_writer(
     return out
 
 
-def all_images(data_path: str) -> List[str]:
+def all_images(data_path: Path) -> List[str]:
     """Return path of all input images. Assume that the ascending order of
     file names is the same as the order of time sequence.
 
@@ -370,16 +325,14 @@ def all_images(data_path: str) -> List[str]:
     List[str]
         sorted in numerical order.
     """
-    images = glob.glob(os.path.join(data_path, "*.png"))
+    images = list(Path(data_path).glob("*.png"))
     if len(images) == 0:
         raise ValueError("Input folder is empty or images are not in 'png' format.")
-    images_sorted = sorted(
-        images, key=lambda line: int(line.split(os.sep)[-1].split(".")[0])
-    )
-    return images_sorted
+    images_sorted = sorted(images, key=lambda p: int(p.stem))
+    return [str(p) for p in images_sorted]
 
 
-def read_image(path: str) -> Any:
+def read_image(path: Path) -> Any:
     """Read image and returns it as grayscale Any float scaled 0-255.
 
     Parameters
@@ -391,45 +344,9 @@ def read_image(path: str) -> Any:
     -------
     img: Any scaled 0-255
     """
-    img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+    img = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
     img = img.astype(np.float32)
     return img
-
-
-def read_aedat_txt_events(fname: str) -> Any:
-    """
-    Reads txt data DVS events
-
-    Parameters
-    ----------
-    fname:str
-        filename
-
-    Returns:
-    -------
-        Any with each row having ts,x,y,pol
-        ts is in seconds
-        pol is 0,1
-    """
-    import numpy as np
-    import pandas as pd
-
-    dat = pd.read_table(
-        fname,
-        sep=" ",  # field separator
-        comment="#",  # comment
-        skipinitialspace=False,
-        skip_blank_lines=True,
-        error_bad_lines=False,
-        warn_bad_lines=True,
-        encoding="utf-8",
-        names=["t", "x", "y", "p"],
-        dtype={"a": np.float64, "b": np.int32, "c": np.int32, "d": np.int32},
-    )
-
-    # array[N,4] with each row having ts, x, y, pol.
-    # ts is in float seconds. pol is 0,1
-    return np.array(dat.values)
 
 
 def select_events_in_roi(

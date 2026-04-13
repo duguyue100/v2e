@@ -1,5 +1,6 @@
 import atexit
 import logging
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -26,7 +27,7 @@ class TextEventWriter:
         0.000148001 192 79 1
     """
 
-    def __init__(self, filepath: str, label_signal_noise: bool = False):
+    def __init__(self, filepath: Path, label_signal_noise: bool = False):
         """Constructs the CSV writer
         :param filepath: the full path to file
         :param label_signal_noise: set True to append column labeling signal (1) and noise (0)
