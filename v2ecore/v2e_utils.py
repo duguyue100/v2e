@@ -1,6 +1,5 @@
 import logging
 import os
-import tempfile
 from pathlib import Path
 from typing import Any
 from typing import Callable
@@ -10,7 +9,6 @@ from typing import Tuple
 from typing import Union
 
 import cv2
-import easygui
 import numpy as np
 from engineering_notation import EngNumber as eng
 
@@ -230,38 +228,6 @@ def check_lowpass(cutoffhz: float, fs: float, logger: logging.Logger) -> None:
             eps,
             maxeps,
         )
-
-
-def inputDDDFileDialog() -> str:
-    return _inputFileDialog([("DDD recordings", ".hdf5"), ("Any type", "*")])
-
-
-def _inputFileDialog(types: List[Tuple[str, str]]) -> str:
-    LAST_FILE_NAME_FILE = "v2e_last_file_chosen.txt"
-    fn = Path(tempfile.gettempdir()) / LAST_FILE_NAME_FILE
-    default = None
-    try:
-        with open(fn) as f:
-            default = f.read()
-    except FileNotFoundError:
-        pass
-    filename = easygui.fileopenbox(
-        msg="Select file to convert",
-        title="v2e input video file",
-        filetypes=[types],
-        multiple=False,
-        default=default,
-    )
-    if filename is None:
-        logger.info("no file selected, quitting")
-        quit(0)
-    logger.info("selected %s with file dialog", filename)
-    try:
-        with open(fn, "w") as f:
-            f.write(filename)
-    except Exception:  # noqa: S110
-        pass  # noqa: S110
-    return str(filename) if filename else ""
 
 
 def checkAddSuffix(path: Path, suffix: str) -> str:
