@@ -1,19 +1,19 @@
 #!/usr/bin/python
 
-'''
+"""
 Recorder for DAVIS + OpenXC data
 Author: J. Binas <jbinas@gmail.com>, 2017
 
 This software is released under the
 GNU LESSER GENERAL PUBLIC LICENSE Version 3.
-'''
+"""
 
-from __future__ import print_function
-import time
-import numpy as np
-import socket, struct
 import multiprocessing as mp
-import queue
+import socket
+import struct
+import time
+
+import numpy as np
 
 HOST = "127.0.0.1"
 PORT = 7777
@@ -48,10 +48,10 @@ etype_by_id = {v: k for k,v in EVENT_TYPES.items()}
 
 
 def unpack_events(p, rotate180=True):
-    '''
+    """
     Extract events from binary data,
     returns list of event tuples.
-    '''
+    """
     if not p['etype'] == 'polarity_event':
         return False
     p_arr = np.fromstring(p['dvs_data'], dtype=np.uint32)
@@ -66,19 +66,19 @@ def unpack_events(p, rotate180=True):
     return ts[0] * 1e-6, np.array([ts, x, y, pol]).T
 
 def unpack_header(header_raw):
-    '''
+    """
     Extract header info from binary data,
     returns dict object.
-    '''
+    """
     vals = struct.unpack('hhiiiiii', header_raw)
     obj = dict(zip(HEADER_FIELDS, vals))
     obj['etype'] = etype_by_id.get(obj['etype'], obj['etype'])
     return obj
 
 def unpack_frame(p, rotate180=True):
-    '''
+    """
     Extract image from binary data, returns timestamp and 2d np.array.
-    '''
+    """
     if not p['etype'] == 'frame_event':
         return False
     img_head = np.fromstring(p['dvs_data'][:36], dtype=np.uint32)
@@ -89,9 +89,9 @@ def unpack_frame(p, rotate180=True):
     return img_head[2] * 1e-6, img_data
 
 def unpack_special(p, rotate180=True):
-    '''
+    """
     Extract special event data (only return type id).
-    '''
+    """
     if not p['etype'] == 'special_event':
         return False
     p_arr = np.fromstring(p['dvs_data'], dtype=np.uint32)
@@ -110,10 +110,10 @@ unpack_func = {
 
 
 def unpack_data(d, rotate180=True):
-    '''
+    """
     Unpack data for given caer packet,
     return False if event type does not exist.
-    '''
+    """
     _get_data = unpack_func.get(d['etype'])
     if _get_data:
         d['timestamp'], d['data'] = _get_data(d,rotate180)
@@ -125,7 +125,7 @@ def unpack_data(d, rotate180=True):
 
 class Monitor(mp.Process):
     def __init__(self, bufsize=2048):
-        super(Monitor, self).__init__()
+        super().__init__()
         self.sock = socket.socket()
         self.sock.connect((HOST, PORT))
 
@@ -171,7 +171,7 @@ class Monitor(mp.Process):
         self.exit.set()
 
 
-class Controller(object):
+class Controller:
     def __init__(self):
         self.data_buffer_size = 4069 * 30
         self.max_cmd_parts = 5
@@ -203,16 +203,16 @@ class Controller(object):
         try:
             self.s_commands = socket.socket()
             self.s_commands.connect((HOST, PORT_CTL))
-        except socket.error as msg:
+        except OSError as msg:
             print('Failed to create socket ' + str(msg))
             quit()
 
     def parse_command(self, command):
-        '''
-        parse string command
+        """
+        Parse string command
         e.g. string: put /1/1-DAVISFX2/'+str(sensor)+'/aps/ Exposure int 10
         (copied from https://svn.code.sf.net/p/jaer/code/scripts/python/cAER_utils/imagers_characterization/caer_communication.py)
-        '''
+        """
         databuffer = bytearray(b'\x00' * self.data_buffer_size)
         node_length = 0
         key_length = 0
@@ -254,11 +254,11 @@ class Controller(object):
         return databuffer[0:databuffer_length]
 
     def send_command(self, string):
-        '''
-        parse input command and send it to the device
+        """
+        Parse input command and send it to the device
         print the answer
         input string - ie. 'put /1/1-DAVISFX2/'+str(sensor)+'/aps/ Exposure int 100'
-        '''
+        """
         cmd = self.parse_command(string)
         self.s_commands.sendall(cmd)
         msg_header = self.s_commands.recv(4)
@@ -272,7 +272,7 @@ class Controller(object):
 
 
 class ExposureCtl(Controller):
-    '''
+    """
     Automatic exposure control
     * fps -- update frequency
     * target -- target average pixel value (between 0 and 255)
@@ -284,9 +284,10 @@ class ExposureCtl(Controller):
     which might be the hood. 
     Howvever, if sensor is mounted upside down, then we should ignore a lot of the bottom
     (sky) and maybe a bit of the top (hood).
-    '''
+    """
+
     def __init__(self, fps=5, target=100, cutoff_top=10, cutoff_bot=200):
-        super(ExposureCtl, self).__init__()
+        super().__init__()
         self.fps = fps
         self.dt = 1. / self.fps
         self.target = float(target * 255)

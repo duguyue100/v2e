@@ -1,0 +1,128 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "v2e"
+version = "2.0.0"
+description = "Generates synthetic DVS events from video"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [
+    { name = "Tobi Delbruck" },
+    { name = "Yuhuang Hu" },
+    { name = "Zhe He" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "numpy>=1.24",
+    "torch",
+    "torchvision",
+    "opencv-python",
+    "h5py",
+    "pydantic>=2.0",
+    "tqdm",
+    "engineering-notation",
+    "matplotlib",
+    "scikit-image",
+    "screeninfo",
+    "easygui",
+]
+
+[project.optional-dependencies]
+numba = ["numba>=0.58"]
+aedat4 = ["dv-processing>=1.7.8", "numpy<2.0"]
+gui = ["Gooey>=1.0.3"]
+dev = [
+    "ruff",
+    "mypy",
+    "pytest",
+    "pytest-cov",
+    "pre-commit",
+]
+
+[project.scripts]
+v2e = "v2e:main"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "W",    # pycodestyle warnings
+    "I",    # isort
+    "UP",   # pyupgrade (modernize syntax)
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "ANN",  # flake8-annotations (type hint enforcement)
+    "PT",   # flake8-pytest-style
+    "D",    # pydocstyle
+    "RUF",  # ruff-specific rules
+]
+ignore = [
+    "ANN101",  # missing type annotation for self
+    "ANN102",  # missing type annotation for cls
+    "D100",    # missing docstring in public module (enable later)
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+
+# Gradual adoption: ignore errors in legacy modules initially
+[[tool.mypy.overrides]]
+module = [
+    "v2ecore.ddd20_interfaces.*",
+    "v2ecore.ddd20_utils.*",
+    "v2ecore.desktop.*",
+]
+ignore_errors = true
+
+# Third-party stubs
+[[tool.mypy.overrides]]
+module = [
+    "cv2.*",
+    "numba.*",
+    "dv_processing.*",
+    "engineering_notation.*",
+    "screeninfo.*",
+    "h5py.*",
+    "tqdm.*",
+    "v2ecore.v2e_utils",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--tb=short",
+    "-q",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "gpu: marks tests requiring GPU",
+]

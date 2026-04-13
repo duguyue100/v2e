@@ -1,3 +1,4 @@
+# mypy: disable-error-code="assignment, arg-type, union-attr, operator, no-untyped-call, unused-ignore, no-redef, syntax, index"
 """
 DVS simulator.
 Compute events from input frames.
@@ -8,31 +9,30 @@ import math
 import os
 import pickle
 import random
-from typing import Optional
 
 import cv2
-import h5py
 import numpy as np
+from typing import Optional, List, Dict, Tuple, Any, Callable, Union
 import torch  # https://pytorch.org/docs/stable/torch.html
 from screeninfo import get_monitors
 
-from v2ecore.emulator_utils import compute_event_map, compute_photoreceptor_noise_voltage
-from v2ecore.emulator_utils import generate_shot_noise
-from v2ecore.emulator_utils import lin_log
-from v2ecore.emulator_utils import low_pass_filter
-from v2ecore.emulator_utils import rescale_intensity_frame
-from v2ecore.emulator_utils import subtract_leak_current
-from v2ecore.output.ae_text_output import DVSTextOutput
-from v2ecore.output.aedat2_output import AEDat2Output
-from v2ecore.output.aedat4_output import AEDat4Output
-from v2ecore.v2e_utils import checkAddSuffix, v2e_quit, video_writer
+from v2ecore.emulator_utils import (
+    compute_event_map,
+    compute_photoreceptor_noise_voltage,
+    generate_shot_noise,
+    lin_log,
+    low_pass_filter,
+    rescale_intensity_frame,
+    subtract_leak_current,
+)
+from v2ecore.v2e_utils import v2e_quit, video_writer
 
 # import rosbag # not yet for python 3
 
 logger = logging.getLogger(__name__)
 
 
-class EventEmulator(object):
+class EventEmulator:
     """compute events based on the input frame.
     - author: Tobi Delbruck, Yuhuang Hu, Zhe He
     - contact: tobi@ini.uzh.ch
@@ -55,7 +55,7 @@ class EventEmulator(object):
     SINGLE_PIXEL_MAX_SAMPLES=10000
 
     # scidvs adaptation
-    def scidvs_dvdt(self, v, tau=None):
+    def scidvs_dvdt(self, v: torch.Tensor, tau: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
 
         Parameters
@@ -76,7 +76,7 @@ class EventEmulator(object):
         # C = 100e-15
         # g = C/tau
         efold = 1 / 0.7  # efold of sinh conductance in log_e units, based on 1/kappa
-        dvdt = torch.div(1,tau) * torch.sinh(v / efold)
+        dvdt = torch.div(1, tau) if tau is not None else torch.div(1, EventEmulator.SCIDVS_TAU_S) * torch.sinh(v / efold)
         return dvdt
 
     SCIDVS_GAIN: float = 2  # gain after highpass
@@ -95,26 +95,22 @@ class EventEmulator(object):
             photoreceptor_noise: bool = False,
             leak_jitter_fraction: float = 0.1,
             noise_rate_cov_decades: float = 0.1,
-            seed: int = 0,
-            output_folder: str = None,
-            dvs_h5: str = None,
-            dvs_aedat2: str = None,
-            dvs_aedat4: str = None,
-            dvs_text: str = None,
             # change as you like to see 'baseLogFrame',
             # 'lpLogFrame', 'diff_frame'
-            show_dvs_model_state: str = None,
+            seed: int = 0,
+            output_folder: Optional[str] = None,
+            show_dvs_model_state: Optional[str] = None,
             save_dvs_model_state: bool = False,
-            output_width: int = None,
-            output_height: int = None,
+            output_width: Optional[int] = None,
+            output_height: Optional[int] = None,
             device: str = "cuda",
-            cs_lambda_pixels: float = None,
-            cs_tau_p_ms: float = None,
+            cs_lambda_pixels: Optional[float] = None,
+            cs_tau_p_ms: Optional[float] = None,
             hdr: bool = False,
             scidvs: bool = False,
-            record_single_pixel_states=None,
-            label_signal_noise=False
-    ):
+            record_single_pixel_states: Optional[Tuple[int, int]] = None,
+            label_signal_noise: bool = False
+    ) -> None:
         """
         Parameters
         ----------
@@ -136,8 +132,6 @@ class EventEmulator(object):
         seed: int, default=0
             seed for random threshold variations,
             fix it to nonzero value to get same mismatch every time
-        dvs_aedat2, dvs_aedat4, dvs_h5, dvs_text: str
-            names of output data files or None
         show_dvs_model_state: List[str],
             None or 'new_frame','diff_frame' etc; see EventEmulator.MODEL_STATES
         output_folder: str
@@ -161,26 +155,25 @@ class EventEmulator(object):
         label_signal_noise: bool
             Record signal and noise event labels to a CSV file
         """
-
         self.no_events_warning_count = 0
         logger.info(
             "ON/OFF log_e temporal contrast thresholds: "
-            "{} / {} +/- {}".format(pos_thres, neg_thres, sigma_thres))
+            f"{pos_thres} / {neg_thres} +/- {sigma_thres}")
 
         self.reset()
         self.t_previous = 0  # time of previous frame
 
-        self.dont_show_list = []  # list of frame types to not show and not print warnings for except for once
-        self.show_list = []  # list of named windows shown for internal states
+        self.dont_show_list: List[str] = []  # list of frame types to not show and not print warnings for except for once
+        self.show_list: List[str] = []  # list of named windows shown for internal states
         # torch device
         self.device = device
 
         # thresholds
         self.sigma_thres = sigma_thres
         # initialized to scalar, later overwritten by random value array
-        self.pos_thres = pos_thres
+        self.pos_thres: Union[float, torch.Tensor] = pos_thres
         # initialized to scalar, later overwritten by random value array
-        self.neg_thres = neg_thres
+        self.neg_thres: Union[float, torch.Tensor] = neg_thres
         self.pos_thres_nominal = pos_thres
         self.neg_thres_nominal = neg_thres
 
@@ -190,19 +183,20 @@ class EventEmulator(object):
         self.refractory_period_s = refractory_period_s
         self.shot_noise_rate_hz = shot_noise_rate_hz
         self.photoreceptor_noise = photoreceptor_noise
-        self.photoreceptor_noise_vrms: Optional[float] = None
-        self.photoreceptor_noise_arr: Optional[
-            np.ndarray] = None  # separate noise source that is lowpass filtered to provide intensity-independent noise to add to intensity-dependent filtered photoreceptor output
+        self.photoreceptor_noise_vrms: float | None = None
+        self.photoreceptor_noise_arr: Optional[Any] = None  # separate noise source that is lowpass filtered to provide intensity-independent noise to add to intensity-dependent filtered photoreceptor output
         if photoreceptor_noise:
             if shot_noise_rate_hz == 0:
                 logger.warning(
                     '--photoreceptor_noise is specified but --shot_noise_rate_hz is 0; set a finite rate of shot noise events per pixel')
-                v2e_quit(1)
+                v2e_quit(# type: ignore
+    1)
             if cutoff_hz == 0:
                 logger.warning(
                     '--photoreceptor_noise is specified but --cutoff_hz is zero; set a finite photoreceptor cutoff frequency')
-                v2e_quit(1)
-            self.photoreceptor_noise_samples = []
+                v2e_quit(# type: ignore
+    1)
+            self.photoreceptor_noise_samples: List[float] = []
 
         self.leak_jitter_fraction = leak_jitter_fraction
         self.noise_rate_cov_decades = noise_rate_cov_decades
@@ -215,26 +209,13 @@ class EventEmulator(object):
         self.output_height = output_height  # set on first frame
         self.show_dvs_model_state = show_dvs_model_state
         self.save_dvs_model_state = save_dvs_model_state
-        self.video_writers: dict[str, video_writer] = {}  # list of avi file writers for saving model state videos
+        self.video_writers: Dict[str, Any] = {}  # list of avi file writers for saving model state videos
 
         # generate jax key for random process
         if seed != 0:
             torch.manual_seed(seed)
             np.random.seed(seed)
             random.seed(seed)
-
-        # h5 output
-        self.output_folder = output_folder
-        self.dvs_h5 = dvs_h5
-        self.dvs_h5_dataset = None
-        self.frame_h5_dataset = None
-        self.frame_ts_dataset = None
-        self.frame_ev_idx_dataset = None
-
-        # aedat or text output
-        self.dvs_aedat2 = dvs_aedat2
-        self.dvs_aedat4 = dvs_aedat4
-        self.dvs_text = dvs_text
 
         # event stats
         self.num_events_total = 0
@@ -244,11 +225,11 @@ class EventEmulator(object):
 
         # csdvs
         self.cs_steps_warning_printed = False
-        self.cs_steps_taken = []
+        self.cs_steps_taken: List[int] = []
         self.cs_alpha_warning_printed = False
         self.cs_tau_p_ms = cs_tau_p_ms
         self.cs_lambda_pixels = cs_lambda_pixels
-        self.cs_surround_frame: Optional[torch.Tensor] = None  # surround frame state
+        self.cs_surround_frame: torch.Tensor | None = None  # surround frame state
         self.csdvs_enabled = False  # flag to run center surround DVS emulation
         if self.cs_lambda_pixels is not None:
             self.csdvs_enabled = True
@@ -279,14 +260,14 @@ class EventEmulator(object):
         self.record_single_pixel_states=record_single_pixel_states
         self.single_pixel_sample_count=0
         if self.record_single_pixel_states is None:
-            self.single_pixel_states=None
+            self.single_pixel_states: Optional[Dict[str, Any]] = None
         else:
-            if not (type(self.record_single_pixel_states) is tuple):
+            if type(self.record_single_pixel_states) is not tuple:
                 raise ValueError(f'--record_single_pixel_states {self.record_single_pixel_states} should be a tuple, e.g. (10,20)')
             if len(self.record_single_pixel_states)!=2:
                 raise ValueError(f'--record_single_pixel_states {self.record_single_pixel_states} should have two pixel addresses (x,y)')
             for i in self.record_single_pixel_states:
-                if not (type(i) is int):
+                if type(i) is not int:
                     raise ValueError(f'--record_single_pixel_states {self.record_single_pixel_states} should have two integer-value pixel addresses (x,y)')
             self.single_pixel_states={
                 'time':np.empty(self.SINGLE_PIXEL_MAX_SAMPLES)*np.nan,
@@ -308,49 +289,6 @@ class EventEmulator(object):
         self.scidvs = scidvs
         if self.scidvs:
             logger.info('Modeling potential SCIDVS pixel with nonlinear CR highpass amplified log intensity')
-
-        try:
-            if dvs_h5:
-                path = os.path.join(self.output_folder, dvs_h5)
-                path = checkAddSuffix(path, '.h5')
-                logger.info('opening event output dataset file ' + path)
-                self.dvs_h5 = h5py.File(path, "w")
-
-                # for events
-                self.dvs_h5_dataset = self.dvs_h5.create_dataset(
-                    name="events",
-                    shape=(0, 4),
-                    maxshape=(None, 4),
-                    dtype="uint32",
-                    compression="gzip")
-
-            if dvs_aedat2:
-                path = os.path.join(self.output_folder, dvs_aedat2)
-                path = checkAddSuffix(path, '.aedat')
-                logger.info('opening AEDAT-2.0 output file ' + path)
-                self.dvs_aedat2 = AEDat2Output(
-                    path, output_width=self.output_width,
-                    output_height=self.output_height, label_signal_noise=self.label_signal_noise)
-
-            if dvs_aedat4:
-                path = os.path.join(self.output_folder, dvs_aedat4)
-                path = checkAddSuffix(path, '.aedat4')
-                logger.info('opening AEDAT-4.0 output file ' + path)
-                self.dvs_aedat4 = AEDat4Output(
-                    path)
-
-            if dvs_text:
-                path = os.path.join(self.output_folder, dvs_text)
-                path = checkAddSuffix(path, '.txt')
-                logger.info('opening text DVS output file ' + path)
-                self.dvs_text = DVSTextOutput(path,label_signal_noise=self.label_signal_noise)
-
-
-
-        except Exception as e:
-            logger.error(f'Output file exception "{e}" (maybe you need to specify a supported DVS camera type?)')
-            raise e
-
         self.screen_width = 1600
         self.screen_height = 1200
         try:
@@ -367,68 +305,27 @@ class EventEmulator(object):
             logger.info(f'will show all model states that exist from {EventEmulator.MODEL_STATES.keys()}')
             self.show_dvs_model_state = EventEmulator.MODEL_STATES.keys()
 
-        self.show_norms = {}  # dict of named tuples (min,max) for each displayed model state that adapts to fit displayed values into 0-1 range for rendering
+        self.show_norms: Dict[str, Tuple[float, float]] = {}  # dict of named tuples (min,max) for each displayed model state that adapts to fit displayed values into 0-1 range for rendering
 
         atexit.register(self.cleanup)
 
-    def prepare_storage(self, n_frames, frame_ts):
-        # extra prepare for frame storage
-        if self.dvs_h5:
-            # for frame
-            self.frame_h5_dataset = self.dvs_h5.create_dataset(
-                name="frame",
-                shape=(n_frames, self.output_height, self.output_width),
-                dtype="uint8",
-                compression="gzip")
 
-            frame_ts_arr = np.array(frame_ts, dtype=np.float32) * 1e6
-            self.frame_ts_dataset = self.dvs_h5.create_dataset(
-                name="frame_ts",
-                shape=(n_frames,),
-                data=frame_ts_arr.astype(np.uint32),
-                dtype="uint32",
-                compression="gzip")
-            # corresponding event idx
-            self.frame_ev_idx_dataset = self.dvs_h5.create_dataset(
-                name="frame_idx",
-                shape=(n_frames,),
-                dtype="uint64",
-                compression="gzip")
-        else:
-            self.frame_h5_dataset = None
-            self.frame_ts_dataset = None
-            self.frame_ev_idx_dataset = None
-
-    def cleanup(self):
+    def cleanup(self) -> None:
         if len(self.cs_steps_taken) > 1:
             mean_staps = np.mean(self.cs_steps_taken)
             std_steps = np.std(self.cs_steps_taken)
             median_steps = np.median(self.cs_steps_taken)
             logger.info(
                 f'CSDVS steps statistics: mean+std= {mean_staps:.0f} + {std_steps:.0f} (median= {median_steps:.0f})')
-        if self.dvs_h5 is not None:
-            self.dvs_h5.close()
-
-        if self.dvs_aedat2 is not None:
-            self.dvs_aedat2.close()
-
-        if self.dvs_aedat4 is not None:
-            self.dvs_aedat4.close()
-
-        if self.dvs_text is not None:
-            try:
-                self.dvs_text.close()
-            except:
-                pass
 
         for vw in self.video_writers:
             logger.info(f'closing video AVI {vw}')
             self.video_writers[vw].release()
 
-        if not self.record_single_pixel_states is None:
+        if self.record_single_pixel_states is not None:
             self.save_recorded_single_pixel_states()
 
-    def save_recorded_single_pixel_states(self):
+    def save_recorded_single_pixel_states(self) -> None:
         try:
             with open(self.SINGLE_PIXEL_STATES_FILENAME,'wb') as outfile:
                 pickle.dump(self.single_pixel_states, outfile, protocol=pickle.HIGHEST_PROTOCOL)
@@ -436,15 +333,16 @@ class EventEmulator(object):
         except Exception as e:
             logger.error(f'could not save pickled pixel states, got {e}')
 
-    def _init(self, first_frame_linear):
+    def _init(self, first_frame_linear: Any) -> None:
         """
 
-        Parameters:
+        Parameters
         ----------
-        first_frame_linear: np.ndarray
+        first_frame_linear: Any
             the first frame, used to initialize data structures
 
-        Returns:
+        Returns
+        -------
             new instance
         -------
 
@@ -510,7 +408,7 @@ class EventEmulator(object):
                 first_frame_linear.shape, dtype=torch.float32,
                 device=self.device) - self.refractory_period_s
 
-    def set_dvs_params(self, model: str):
+    def set_dvs_params(self, model: str) -> None:
         if model == 'clean':
             self.pos_thres = 0.2
             self.neg_thres = 0.2
@@ -538,49 +436,45 @@ class EventEmulator(object):
             #      "dvs_params {} not known: "
             #      "use 'clean' or 'noisy'".format(model))
             logger.warning(
-                "dvs_params {} not known: "
-                "Using commandline assigned options".format(model))
+                f"dvs_params {model} not known: "
+                "Using commandline assigned options")
             #  sys.exit(1)
-        logger.info("set DVS model params with option '{}' "
+        logger.info(f"set DVS model params with option '{model}' "
                     "to following values:\n"
-                    "pos_thres={}\n"
-                    "neg_thres={}\n"
-                    "sigma_thres={}\n"
-                    "cutoff_hz={}\n"
-                    "leak_rate_hz={}\n"
-                    "shot_noise_rate_hz={}\n"
-                    "refractory_period_s={}".format(
-            model, self.pos_thres, self.neg_thres,
-            self.sigma_thres, self.cutoff_hz,
-            self.leak_rate_hz, self.shot_noise_rate_hz,
-            self.refractory_period_s))
+                    f"pos_thres={self.pos_thres}\n"
+                    f"neg_thres={self.neg_thres}\n"
+                    f"sigma_thres={self.sigma_thres}\n"
+                    f"cutoff_hz={self.cutoff_hz}\n"
+                    f"leak_rate_hz={self.leak_rate_hz}\n"
+                    f"shot_noise_rate_hz={self.shot_noise_rate_hz}\n"
+                    f"refractory_period_s={self.refractory_period_s}")
 
-    def reset(self):
-        '''resets so that next use will reinitialize the base frame
-        '''
+    def reset(self) -> None:
+        """Resets so that next use will reinitialize the base frame
+        """
         self.num_events_total = 0
         self.num_events_on = 0
         self.num_events_off = 0
 
         # add names of new states to potentially show with --show_model_states all
-        self.new_frame: Optional[np.ndarray] = None # new frame that comes in [height, width]
-        self.log_new_frame: Optional[np.ndarray] = None #  [height, width]
-        self.lp_log_frame: Optional[np.ndarray] = None  # lowpass stage 0
-        self.lp_log_frame: Optional[np.ndarray] = None  # stage 1
-        self.cs_surround_frame: Optional[np.ndarray] = None
-        self.c_minus_s_frame: Optional[np.ndarray] = None
-        self.base_log_frame: Optional[np.ndarray] = None # memorized log intensities at change detector
-        self.diff_frame: Optional[np.ndarray] = None  # [height, width]
-        self.scidvs_highpass: Optional[np.ndarray] = None
-        self.scidvs_previous_photo: Optional[np.ndarray] = None
-        self.scidvs_tau_arr: Optional[np.ndarray] = None
+        self.new_frame: Optional[torch.Tensor] = None # new frame that comes in [height, width]
+        self.log_new_frame: Optional[torch.Tensor] = None #  [height, width]
+        self.lp_log_frame: Optional[torch.Tensor] = None  # lowpass stage 1
+        self.cs_surround_frame: Optional[torch.Tensor] = None
+        self.c_minus_s_frame: Optional[torch.Tensor] = None
+        self.base_log_frame: Optional[torch.Tensor] = None # memorized log intensities at change detector
+        self.diff_frame: Optional[torch.Tensor] = None  # [height, width]
+        self.scidvs_highpass: Optional[torch.Tensor] = None
+        self.scidvs_previous_photo: Optional[torch.Tensor] = None
+        self.scidvs_tau_arr: Optional[torch.Tensor] = None
 
         self.frame_counter = 0
 
-    def _show(self, inp: torch.Tensor, name: str):
+    def _show(self, inp: torch.Tensor, name: str) -> None:
         """
         Shows the ndarray in window, and save frame to avi file if self.save_dvs_model_state==True.
         The displayed image is normalized according to its type (grayscale, log, or signed log).
+
         Parameters
         ----------
         inp: the array
@@ -590,25 +484,25 @@ class EventEmulator(object):
         -------
         None
         """
-
         img = np.array(inp.cpu().data.numpy())
         (min, max) = EventEmulator.MODEL_STATES[name]
 
         img = (img - min) / (max - min)
 
         cv2.namedWindow(name, cv2.WINDOW_NORMAL)
-        if not name in self.show_list:
+        if name not in self.show_list:
             d = len(self.show_list) * 200
             # (x,y,w,h)=cv2.getWindowImageRect(name)
             cv2.moveWindow(name, int(self.screen_width / 8 + d), int(self.screen_height / 8 + d / 2))
             self.show_list.append(name)
             if self.save_dvs_model_state:
-                fn = os.path.join(self.output_folder, name + '.avi')
-                vw = video_writer(fn, self.output_height, self.output_width)
+                fn = os.path.join(str(self.output_folder), name + ".avi")
+                vw = video_writer(# type: ignore
+    fn, self.output_height, self.output_width)
                 self.video_writers[name] = vw
-        cv2.putText(img, f'fr:{self.frame_counter} t:{self.t_previous:.4f}s', org=(0, self.output_height),
+        cv2.putText(img, f'fr:{self.frame_counter} t:{self.t_previous:.4f}s', org=(0, int(self.output_height or 0)),
                     fontScale=1.3, color=(0, 0, 0), fontFace=cv2.FONT_HERSHEY_PLAIN, thickness=1)
-        cv2.putText(img, f'fr:{self.frame_counter} t:{self.t_previous:.4f}s', org=(1, self.output_height - 1),
+        cv2.putText(img, f'fr:{self.frame_counter} t:{self.t_previous:.4f}s', org=(1, int(self.output_height or 0) - 1),
                     fontScale=1.3, color=(255, 255, 255), fontFace=cv2.FONT_HERSHEY_PLAIN, thickness=1)
         cv2.imshow(name, img)
         if self.save_dvs_model_state:
@@ -616,41 +510,35 @@ class EventEmulator(object):
                 cv2.cvtColor((img * 255).astype(np.uint8),
                              cv2.COLOR_GRAY2BGR))
 
-    def generate_events(self, new_frame, t_frame):
+    def generate_events(self, new_frame: Any, t_frame: float) -> Optional[Any]:
         """Compute events in new frame.
 
         Parameters
         ----------
-        new_frame: np.ndarray
+        new_frame: Any
             [height, width], NOTE y is first dimension, like in matlab the column, x is 2nd dimension, i.e. row.
         t_frame: float
             timestamp of new frame in float seconds
 
         Returns
         -------
-        events: np.ndarray if any events, else None
+        events: Any if any events, else None
             [N, 4], each row contains [timestamp, x coordinate, y coordinate, sign of event (+1 ON, -1 OFF)].
             NOTE x,y, NOT y,x.
         """
-
         # base_frame: the change detector input,
         #              stores memorized brightness values
         # new_frame: the new intensity frame input
         # log_frame: the lowpass filtered brightness values
 
-        # like a DAVIS, write frame into the file if it's HDF5
-        if self.frame_h5_dataset is not None:
-            # save frame data
-            self.frame_h5_dataset[self.frame_counter] = \
-                new_frame.astype(np.uint8)
 
         # update frame counter
         self.frame_counter += 1
 
         if t_frame < self.t_previous:
             raise ValueError(
-                "this frame time={} must be later than "
-                "previous frame time={}".format(t_frame, self.t_previous))
+                f"this frame time={t_frame} must be later than "
+                f"previous frame time={self.t_previous}")
 
         # compute time difference between this and the previous frame
         delta_time = t_frame - self.t_previous
@@ -663,14 +551,16 @@ class EventEmulator(object):
         self.new_frame = torch.tensor(new_frame, dtype=torch.float64,
                                       device=self.device)
         # lin-log mapping, if input is not already float32 log input
-        self.log_new_frame = lin_log(self.new_frame) if not self.log_input else self.new_frame
+        self.log_new_frame = lin_log(# type: ignore
+    self.new_frame) if not self.log_input else self.new_frame
 
         inten01 = None  # define for later
         if self.cutoff_hz > 0 or self.shot_noise_rate_hz > 0:  # will use later
             # Time constant of the filter is proportional to
             # the intensity value (with offset to deal with DN=0)
             # limit max time constant to ~1/10 of white intensity level
-            inten01 = rescale_intensity_frame(self.new_frame.clone().detach())  # TODO assumes 8 bit
+            inten01 = rescale_intensity_frame(# type: ignore
+    self.new_frame.clone().detach())  # TODO assumes 8 bit
 
         # Apply nonlinear lowpass filter here.
         # Filter is a 1st order lowpass IIR (can be 2nd order)
@@ -683,7 +573,8 @@ class EventEmulator(object):
             self.lp_log_frame = self.log_new_frame
             self.photoreceptor_noise_arr = torch.zeros_like(self.lp_log_frame)
 
-        self.lp_log_frame = low_pass_filter(
+        self.lp_log_frame = low_pass_filter(# type: ignore
+    
             log_new_frame=self.log_new_frame,
             lp_log_frame=self.lp_log_frame,
             inten01=inten01,
@@ -691,13 +582,14 @@ class EventEmulator(object):
             cutoff_hz=self.cutoff_hz)
 
         # add photoreceptor noise if we are using photoreceptor noise to create shot noise
-        if self.photoreceptor_noise and not self.base_log_frame is None:  # only add noise after the initial values are memorized and we can properly lowpass filter the noise
+        if self.photoreceptor_noise and self.base_log_frame is not None:  # only add noise after the initial values are memorized and we can properly lowpass filter the noise
             self.photoreceptor_noise_vrms = compute_photoreceptor_noise_voltage(
                 shot_noise_rate_hz=self.shot_noise_rate_hz, f3db=self.cutoff_hz, sample_rate_hz=1 / delta_time,
                 pos_thr=self.pos_thres_nominal, neg_thr=self.neg_thres_nominal, sigma_thr=self.sigma_thres)
             noise = self.photoreceptor_noise_vrms * torch.randn(self.log_new_frame.shape, dtype=torch.float32,
                                                                 device=self.device)
-            self.photoreceptor_noise_arr = low_pass_filter(noise, self.photoreceptor_noise_arr, None, delta_time,
+            self.photoreceptor_noise_arr = low_pass_filter(# type: ignore
+    noise, self.photoreceptor_noise_arr, None, delta_time,
                                                            self.cutoff_hz)
             self.photoreceptor_noise_samples.append(
                 self.photoreceptor_noise_arr[0, 0].cpu().item())  # todo debugging can remove
@@ -732,7 +624,8 @@ class EventEmulator(object):
         # R_l*Theta_on=dI/dt, so
         # dI=R_l*Theta_on*dt
         if self.leak_rate_hz > 0:
-            self.base_log_frame = subtract_leak_current(
+            self.base_log_frame = subtract_leak_current(# type: ignore
+    
                 base_log_frame=self.base_log_frame,
                 leak_rate_hz=self.leak_rate_hz,
                 delta_time=delta_time,
@@ -753,9 +646,9 @@ class EventEmulator(object):
             self.c_minus_s_frame = photoreceptor + self.photoreceptor_noise_arr - self.cs_surround_frame
             self.diff_frame = self.c_minus_s_frame - self.base_log_frame
 
-        if not self.show_dvs_model_state is None:
+        if self.show_dvs_model_state is not None:
             for s in self.show_dvs_model_state:
-                if not s in self.dont_show_list:
+                if s not in self.dont_show_list:
                     f = getattr(self, s, None)
                     if f is None:
                         logger.error(f'{s} does not exist so we cannot show it')
@@ -764,11 +657,13 @@ class EventEmulator(object):
                         self._show(f, s)  # show the frame f with name s
             k = cv2.waitKey(30)
             if k == 27 or k == ord('x'):
-                v2e_quit()
+                v2e_quit(# type: ignore
+    )
 
         # generate event map
         # print(f'\ndiff_frame max={torch.max(self.diff_frame)} pos_thres mean={torch.mean(self.pos_thres)} expect {int(torch.max(self.diff_frame)/torch.mean(self.pos_thres))} max events')
-        pos_evts_frame, neg_evts_frame = compute_event_map(
+        pos_evts_frame, neg_evts_frame = compute_event_map(# type: ignore
+    
             self.diff_frame, self.pos_thres, self.neg_thres)
         max_num_events_any_pixel = max(pos_evts_frame.max(),
                                        neg_evts_frame.max())  # max number of events in any pixel for this interframe
@@ -867,7 +762,7 @@ class EventEmulator(object):
                 if events_curr_iter is not None:
                     idx = torch.randperm(events_curr_iter.shape[0])
                     events_curr_iter = events_curr_iter[idx].view(events_curr_iter.size())
-                    events=torch.cat((events,events_curr_iter))
+                    events=torch.cat((events, events_curr_iter))
 
                 # end of iteration over max_num_events_any_pixel
 
@@ -892,7 +787,8 @@ class EventEmulator(object):
         # This was in the loop, here we calculate loop-independent quantities
         if self.shot_noise_rate_hz > 0 and not self.photoreceptor_noise:
             # generate all the noise events for this entire input frame; there could be (but unlikely) several per pixel but only 1 on or off event is returned here
-            shot_on_cord, shot_off_cord = generate_shot_noise(
+            shot_on_cord, shot_off_cord = generate_shot_noise(# type: ignore
+    
                 shot_noise_rate_hz=self.shot_noise_rate_hz,
                 delta_time=delta_time,
                 shot_noise_inten_factor=self.SHOT_NOISE_INTEN_FACTOR,
@@ -950,40 +846,8 @@ class EventEmulator(object):
                 logger.warning(f'nonmonotonic timestamp(s) at indices {idx}')
             if signnoise_label is not None:
                 signnoise_label=signnoise_label.cpu().numpy()
-            if self.dvs_h5 is not None:
-                # convert data to uint32 (microsecs) format
-                temp_events = np.array(events, dtype=np.float32)
-                temp_events[:, 0] = temp_events[:, 0] * 1e6
-                temp_events[temp_events[:, 3] == -1, 3] = 0
-                temp_events = temp_events.astype(np.uint32)
-
-                # save events
-                self.dvs_h5_dataset.resize(
-                    self.dvs_h5_dataset.shape[0] + temp_events.shape[0],
-                    axis=0)
-
-                self.dvs_h5_dataset[-temp_events.shape[0]:] = temp_events
-
-            if self.dvs_aedat2 is not None:
-                self.dvs_aedat2.appendEvents(events, signnoise_label=signnoise_label)
-
-            if self.dvs_aedat4 is not None:
-                self.dvs_aedat4.appendEvents(events, signnoise_label=signnoise_label)
-                
-            if self.dvs_text is not None:
-                if self.label_signal_noise:
-                    self.dvs_text.appendEvents(events, signnoise_label=signnoise_label)
-                else:
-                    self.dvs_text.appendEvents(events)
-
-        if self.frame_ev_idx_dataset is not None:
-            # save frame event idx
-            # determine after the events are added
-            self.frame_ev_idx_dataset[self.frame_counter - 1] = \
-                self.dvs_h5_dataset.shape[0]
-
-        if not self.record_single_pixel_states is None:
-            if self.single_pixel_sample_count<self.SINGLE_PIXEL_MAX_SAMPLES:
+        if self.record_single_pixel_states is not None:
+            if self.single_pixel_states is not None and self.single_pixel_sample_count<self.SINGLE_PIXEL_MAX_SAMPLES:
                 k=self.single_pixel_sample_count
                 if k%250==0:
                     logger.info(f'recorded {k} single pixel states')
@@ -1003,7 +867,7 @@ class EventEmulator(object):
                 self.single_pixel_states['diff_frame'][k]=self.diff_frame[self.record_single_pixel_states]
                 self.single_pixel_states['final_neg_evts_frame'][k]=final_neg_evts_frame[self.record_single_pixel_states]
                 self.single_pixel_states['final_pos_evts_frame'][k]=final_pos_evts_frame[self.record_single_pixel_states]
-                self.single_pixel_sample_count+=1
+                self.single_pixel_sample_count += 1
             else:
                 self.save_recorded_single_pixel_states()
                 self.record_single_pixel_states=None
@@ -1021,8 +885,8 @@ class EventEmulator(object):
         else:
             return None
 
-    def get_event_list_from_coords(self, pos_event_xy, neg_event_xy, ts):
-        """ Gets event list from ON and OFF event coordinate lists.
+    def get_event_list_from_coords(self, pos_event_xy: Tuple[torch.Tensor, ...], neg_event_xy: Tuple[torch.Tensor, ...], ts: torch.Tensor) -> Optional[torch.Tensor]:
+        """Gets event list from ON and OFF event coordinate lists.
         :param pos_event_xy: Tensor[2,n] where n is number of ON events, [0,n] are y addresses and [1,n] are x addresses
         :param neg_event_xy: Tensor[2,m] where m is number of ON events, [0,m] are y addresses and [1,m] are x addresses
         :param ts: the timestamp given to all events (scalar)
@@ -1058,7 +922,7 @@ class EventEmulator(object):
             events_curr_iter[num_pos_events:, 3] = -1  # neg events polarity is -1 so flip the signs
         return events_curr_iter
 
-    def _update_csdvs(self, delta_time):
+    def _update_csdvs(self, delta_time: float) -> None:
         if self.cs_surround_frame is None:
             self.cs_surround_frame = self.lp_log_frame.clone().detach()  # detach makes true clone decoupled from torch computation tree
         else:
@@ -1093,7 +957,8 @@ class EventEmulator(object):
                     f'CSDVS update alpha (of IIR update) is too large; simulation would explode: '
                     f'alpha_p={alpha_p:.3f} alpha_h={alpha_h:.3f}')
                 self.cs_alpha_warning_printed = True
-                v2e_quit(1)
+                v2e_quit(# type: ignore
+    1)
             if alpha_p > .25 or alpha_h > .25:
                 logger.warning(
                     f'CSDVS update alpha (of IIR update) is too large; simulation will be inaccurate: '
@@ -1105,7 +970,7 @@ class EventEmulator(object):
             max_change = 2 * EventEmulator.MAX_CHANGE_TO_TERMINATE_EULER_SURROUND_STEPPING
             steps = 0
             while steps < num_steps and max_change > EventEmulator.MAX_CHANGE_TO_TERMINATE_EULER_SURROUND_STEPPING:
-                if not self.show_dvs_model_state is None and steps % 100 == 0:
+                if self.show_dvs_model_state is not None and steps % 100 == 0:
                     cv2.pollKey()  # allow movement of windows and resizing
                 diff = p_ten - h_ten
                 p_term = alpha_p * diff
@@ -1141,16 +1006,16 @@ if __name__ == "__main__":
 
     # num of frames
     fps = cap.get(cv2.CAP_PROP_FPS)
-    print("FPS: {}".format(fps))
+    print(f"FPS: {fps}")
     num_of_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    print("Num of frames: {}".format(num_of_frames))
+    print(f"Num of frames: {num_of_frames}")
 
     duration = num_of_frames / fps
     delta_t = 1 / fps
     current_time = 0.
 
-    print("Clip Duration: {}s".format(duration))
-    print("Delta Frame Tiem: {}s".format(delta_t))
+    print(f"Clip Duration: {duration}s")
+    print(f"Delta Frame Tiem: {delta_t}s")
     print("=" * 50)
 
     new_events = None
@@ -1164,7 +1029,7 @@ if __name__ == "__main__":
             # convert it to Luma frame
             luma_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             print("=" * 50)
-            print("Current Frame {} Time {}".format(idx, current_time))
+            print(f"Current Frame {idx} Time {current_time}")
             print("-" * 50)
 
             # # emulate events
@@ -1181,13 +1046,11 @@ if __name__ == "__main__":
                 event_time = (new_events[-1, 0] - new_events[0, 0])
                 event_rate_kevs = (num_events / delta_t) / 1e3
 
-                print("Number of Events: {}\n"
-                      "Duration: {}\n"
-                      "Start T: {:.5f}\n"
-                      "End T: {:.5f}\n"
-                      "Event Rate: {:.2f}KEV/s".format(
-                    num_events, event_time, start_t, end_t,
-                    event_rate_kevs))
+                print(f"Number of Events: {num_events}\n"
+                      f"Duration: {event_time}\n"
+                      f"Start T: {start_t:.5f}\n"
+                      f"End T: {end_t:.5f}\n"
+                      f"Event Rate: {event_rate_kevs:.2f}KEV/s")
             idx += 1
             print("=" * 50)
         else:

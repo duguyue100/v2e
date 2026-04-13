@@ -3,8 +3,7 @@ import pickle
 
 #%% load data
 from easygui import fileopenbox
-import pickle
-import numpy as np
+
 f=fileopenbox('choose recorded .npz file',default='*.dat')
 states=None
 with open(f,'rb') as infile:

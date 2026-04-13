@@ -1,16 +1,31 @@
+import glob
 import logging
 import os
 import sys
 import tempfile
-
-import numpy as np
-import cv2
-import glob
-import easygui
-from tkinter import filedialog
-from numba import njit
-from engineering_notation import EngNumber as eng
 from pathlib import Path
+from typing import Optional, List, Tuple, Any, Dict, Union, Callable
+
+import cv2
+import easygui  # type: ignore
+import numpy as np
+from engineering_notation import EngNumber as eng
+
+try:
+    from numba import njit, jit
+
+    HAS_NUMBA = True
+except ImportError:
+    HAS_NUMBA = False
+
+    def njit(*args: Any, **kwargs: Any) -> Callable[..., Any]:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+            return func
+
+        return decorator if args and callable(args[0]) is False else decorator(args[0])
+
+    jit = njit
+
 
 # adjust for different sensor than DAVIS346
 DVS_WIDTH, DVS_HEIGHT = 346, 260
@@ -19,12 +34,12 @@ DVS_WIDTH, DVS_HEIGHT = 346, 260
 
 # good codec, basically mp4 with simplest compression, packed in AVI,
 # only 15kB for a few seconds
-OUTPUT_VIDEO_CODEC_FOURCC = 'XVID'
+OUTPUT_VIDEO_CODEC_FOURCC = "XVID"
 logger = logging.getLogger(__name__)
 
 
-class ImageFolderReader(object):
-    def __init__(self, image_folder_path, frame_rate):
+class ImageFolderReader:
+    def __init__(self, image_folder_path: str, frame_rate: float) -> None:
         """ImageFolderReader.
 
         This class implements functions that are similar to
@@ -40,8 +55,7 @@ class ImageFolderReader(object):
         """
         self.image_folder_path = image_folder_path
 
-        self.image_file_list = sorted(
-            glob.glob("{}".format(self.image_folder_path) + "/*.*"))
+        self.image_file_list = sorted(glob.glob(f"{self.image_folder_path}" + "/*.*"))
 
         self.frame_rate = frame_rate
 
@@ -51,12 +65,16 @@ class ImageFolderReader(object):
 
         frame = cv2.imread(self.image_file_list[0])
         if frame is None:
-            logger.error(f'could not read a frame from file "{self.image_file_list[0]}" in folder "{self.image_folder_path}"')
-            raise FileNotFoundError(f'could not read a frame named {self.image_file_list[0]} from folder {self.image_folder_path}')
+            logger.error(
+                f'could not read a frame from file "{self.image_file_list[0]}" in folder "{self.image_folder_path}"'
+            )
+            raise FileNotFoundError(
+                f"could not read a frame named {self.image_file_list[0]} from folder {self.image_folder_path}"
+            )
         self.frame_height, self.frame_width = frame.shape[0], frame.shape[1]
         self.frame_channels = 1 if frame.ndim < 3 else frame.shape[2]
 
-    def read(self, skip=False):
+    def read(self, skip: bool = False) -> Tuple[bool, Optional[Any]]:
         """
         Reads the next frame
 
@@ -67,33 +85,38 @@ class ImageFolderReader(object):
         if not skip:
             frame = cv2.imread(self.image_file_list[self.current_frame_idx])
         else:
-            frame=None
+            frame = None
         self.current_frame_idx += 1
 
         # To match with OpenCV API
         return True, frame
 
-    def release(self):
+    def release(self) -> None:
         """Just to match with OpenCV API."""
         pass
 
-    def __str__(self):
-        s=f'ImageFolderReader reading folder {self.image_folder_path} frame number {self.current_frame_idx}'
+    def __str__(self) -> str:
+        s = f"ImageFolderReader reading folder {self.image_folder_path} frame number {self.current_frame_idx}"
         try:
-            s=s+f' named {self.image_file_list[self.current_frame_idx-1]}'
+            s = s + f" named {self.image_file_list[self.current_frame_idx - 1]}"
         except:
             pass
         return s
 
 
-def v2e_quit(code=0):
+def v2e_quit(code: int = 0) -> None:
     try:
         quit(code)  # not defined in pydev console, e.g. running in pycharm
     finally:
         sys.exit(code)
 
 
-def make_output_folder(output_folder_base, suffix_counter,overwrite, unique_output_folder) -> str:
+def make_output_folder(
+    output_folder_base: str,
+    suffix_counter: int,
+    overwrite: bool,
+    unique_output_folder: bool,
+) -> str:
     """Makes the output folder if it does not exist yet, or makes unique new numbered folder
     :param output_folder_base: the base name of folder. If it is absolute path, then make folder at absolute location, otherwise relative to startup folder
     :param suffix_counter: a counter value to append
@@ -104,40 +127,46 @@ def make_output_folder(output_folder_base, suffix_counter,overwrite, unique_outp
     """
     if overwrite and unique_output_folder:
         logger.error(
-            "specify one or the other of "
-            "--overwrite and --unique_output_folder")
+            "specify one or the other of --overwrite and --unique_output_folder"
+        )
         v2e_quit()
 
-    output_folder = output_folder_base+"-{}".format(suffix_counter) \
-        if suffix_counter > 0 else output_folder_base
+    output_folder = (
+        output_folder_base + f"-{suffix_counter}"
+        if suffix_counter > 0
+        else output_folder_base
+    )
 
-    non_empty_folder_exists = not overwrite and \
-        os.path.exists(output_folder) and os.listdir(output_folder)
+    non_empty_folder_exists = (
+        not overwrite and os.path.exists(output_folder) and os.listdir(output_folder)
+    )
 
     if non_empty_folder_exists and not overwrite and not unique_output_folder:
         logger.error(
-            'non-empty output folder {} already exists \n '
-            '- use --overwrite or --unique_output_folder'.format(
-                os.path.abspath(output_folder)))
+            f"non-empty output folder {os.path.abspath(output_folder)} already exists \n "
+            "- use --overwrite or --unique_output_folder"
+        )
         v2e_quit()
 
     if non_empty_folder_exists and unique_output_folder:
         return make_output_folder(
-            output_folder_base, suffix_counter+1,
-            overwrite, unique_output_folder)
+            output_folder_base, suffix_counter + 1, overwrite, unique_output_folder
+        )
     else:
-        logger.info('using output folder {}'.format(output_folder))
+        logger.info(f"using output folder {output_folder}")
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
-        return output_folder
+        return str(output_folder)
 
 
-def set_output_folder(output_folder,
-                      input_file,
-                      unique_output_folder,
-                      overwrite,
-                      output_in_place,
-                      logger) -> str:
+def set_output_folder(
+    output_folder: Optional[str],
+    input_file: str,
+    unique_output_folder: bool,
+    overwrite: bool,
+    output_in_place: bool,
+    logger: logging.Logger,
+) -> str:
     """Set output folder in a single function.
 
     :param output_folder: path to folder, if supplied, otherwise None
@@ -148,32 +177,39 @@ def set_output_folder(output_folder,
 
     :returns: the output folder path
     """
-
-    if (not output_folder is None) and output_in_place:
-        raise ValueError(f'both output_folder={output_folder} and output_in_place={output_in_place} cannot be set true at same time')
+    if (output_folder is not None) and output_in_place:
+        raise ValueError(
+            f"both output_folder={output_folder} and output_in_place={output_in_place} cannot be set true at same time"
+        )
 
     if output_in_place:
-        ip=Path(input_file)
+        ip = Path(input_file)
         if ip.is_file():
-            output_folder=ip.parent.absolute()
+            output_folder = str(ip.parent.absolute())
         elif ip.is_dir():
-            output_folder=ip.absolute()
-        logger.info(f'output_in_place==True so output_folder={output_folder}')
+            output_folder = str(ip.absolute())
+        logger.info(f"output_in_place==True so output_folder={output_folder}")
     else:
         output_folder = make_output_folder(
-            output_folder, 0, overwrite, unique_output_folder)
-        p=Path(output_folder)
-        logger.info(
-            f'output_in_place==False so made output_folder={p.absolute()}')
+            output_folder if output_folder else "", 0, overwrite, unique_output_folder
+        )
+        p = Path(output_folder)
+        logger.info(f"output_in_place==False so made output_folder={p.absolute()}")
 
-    return output_folder
+    return str(output_folder)
 
 
-def set_output_dimension(output_width, output_height,
-                         dvs128, dvs240, dvs346, dvs640, dvs1024,
-                         logger):
+def set_output_dimension(
+    output_width: Optional[int],
+    output_height: Optional[int],
+    dvs128: bool,
+    dvs240: bool,
+    dvs346: bool,
+    dvs640: bool,
+    dvs1024: bool,
+    logger: logging.Logger,
+) -> Tuple[Optional[int], Optional[int]]:
     """Return output_height and output_width based on arguments."""
-
     if dvs128:
         output_width, output_height = 128, 128
     elif dvs240:
@@ -190,93 +226,96 @@ def set_output_dimension(output_width, output_height,
             "Either output_width is None or output_height is None,"
             "or both. Setting both of them to None. \n"
             "Dimension will be set automatically from video input if available. \n"
-            "Check DVS camera size arguments.")
+            "Check DVS camera size arguments."
+        )
         output_width, output_height = None, None
 
     return output_width, output_height
 
 
-def check_lowpass(cutoffhz, fs, logger):
-    """ checks if cutoffhz is ok given sample rate fs
-
-    """
+def check_lowpass(cutoffhz: float, fs: float, logger: logging.Logger) -> None:
+    """Checks if cutoffhz is ok given sample rate fs"""
     if cutoffhz == 0 or fs == 0:
-        logger.info('lowpass filter is disabled, no need for check')
+        logger.info("lowpass filter is disabled, no need for check")
         return
     maxeps = 0.3
-    tau = 1/(2*np.pi*cutoffhz)
-    dt = 1/fs
-    eps = dt/tau
-    maxdt = tau*maxeps
-    maxcutoff = maxeps/(2*np.pi*dt)
+    tau = 1 / (2 * np.pi * cutoffhz)
+    dt = 1 / fs
+    eps = dt / tau
+    maxdt = tau * maxeps
+    maxcutoff = maxeps / (2 * np.pi * dt)
     if eps > maxeps:
         logger.warning(
-            'Lowpass 3dB cutoff is f_3dB={}Hz (time constant tau={}s) with '
-            'sample rate fs={}Hz (sample interval dt={}s) '
-            ',\n  but this results in large IIR mixing factor '
-            'eps = dt/tau = {:5.3f} > {:4.1f} (maxeps),'
-            '\n which means the lowpass will filter  few or even just '
-            'last sample, i.e. you will not be lowpassing as expected.'
-            '\nWe recommend either'
-            '\n -decreasing --timestamp_resolution of DVS events below {}s'
-            '\n -decreasing --cutoff_frequency_hz below {}Hz'.format(
-                eng(cutoffhz), eng(tau), eng(fs), eng(dt), eps,
-                maxeps, eng(maxdt), eng(maxcutoff)))
+            f"Lowpass 3dB cutoff is f_3dB={eng(cutoffhz)}Hz (time constant tau={eng(tau)}s) with "
+            f"sample rate fs={eng(fs)}Hz (sample interval dt={eng(dt)}s) "
+            ",\n  but this results in large IIR mixing factor "
+            f"eps = dt/tau = {eps:5.3f} > {maxeps:4.1f} (maxeps),"
+            "\n which means the lowpass will filter  few or even just "
+            "last sample, i.e. you will not be lowpassing as expected."
+            "\nWe recommend either"
+            f"\n -decreasing --timestamp_resolution of DVS events below {eng(maxdt)}s"
+            f"\n -decreasing --cutoff_frequency_hz below {eng(maxcutoff)}Hz"
+        )
     else:
         logger.info(
-            'Lowpass cutoff is f_3dB={}Hz with tau={}s and '
-            'with sample rate fs={}Hz (sample interval dt={}s)'
-            ',\nIt has IIR mixing factor eps={:5.3f} which is OK '
-            'because it is less than recommended maxeps={:4.1f}'.format(
-                eng(cutoffhz), eng(tau), eng(fs), eng(dt), eps, maxeps))
+            f"Lowpass cutoff is f_3dB={eng(cutoffhz)}Hz with tau={eng(tau)}s and "
+            f"with sample rate fs={eng(fs)}Hz (sample interval dt={eng(dt)}s)"
+            f",\nIt has IIR mixing factor eps={eps:5.3f} which is OK "
+            f"because it is less than recommended maxeps={maxeps:4.1f}"
+        )
 
 
-def inputVideoFileDialog():
-    return _inputFileDialog(
-        [("Video/Data files", ".avi .mp4 .wmv"), ('Any type', '*')])
+def inputVideoFileDialog() -> str:
+    return _inputFileDialog([("Video/Data files", ".avi .mp4 .wmv"), ("Any type", "*")])
 
 
-def inputDDDFileDialog():
-    return _inputFileDialog([("DDD recordings", ".hdf5"), ('Any type', '*')])
+def inputDDDFileDialog() -> str:
+    return _inputFileDialog([("DDD recordings", ".hdf5"), ("Any type", "*")])
 
 
-def _inputFileDialog(types):
-    LAST_FILE_NAME_FILE = 'v2e_last_file_chosen.txt'
+def _inputFileDialog(types: List[Tuple[str, str]]) -> str:
+    LAST_FILE_NAME_FILE = "v2e_last_file_chosen.txt"
     fn = os.path.join(tempfile.gettempdir(), LAST_FILE_NAME_FILE)
     default = None
     try:
-        with open(fn, 'r') as f:
+        with open(fn) as f:
             default = f.read()
     except FileNotFoundError:
         pass
-    filename = easygui.fileopenbox(msg='Select file to convert',
-                                   title='v2e input video file',
-                                   filetypes=[types],
-                                   multiple=False,
-                                   default=default
-                                   )
+    filename = easygui.fileopenbox(
+        msg="Select file to convert",
+        title="v2e input video file",
+        filetypes=[types],
+        multiple=False,
+        default=default,
+    )
     if filename is None:
-        logger.info('no file selected, quitting')
+        logger.info("no file selected, quitting")
         quit(0)
-    logger.info(f'selected {filename} with file dialog')
+    logger.info(f"selected {filename} with file dialog")
     try:
-        with open(fn, 'w') as f:
+        with open(fn, "w") as f:
             f.write(filename)
     except:
         pass
-    return filename
+    return str(filename) if filename else ""
 
 
-def checkAddSuffix(path: str, suffix: str):
+def checkAddSuffix(path: str, suffix: str) -> str:
     if path.endswith(suffix):
         return path
     else:
-        return os.path.splitext(path)[0]+suffix
+        return os.path.splitext(path)[0] + suffix
 
 
-def video_writer(output_path, height, width,
-                 frame_rate=30, fourcc=OUTPUT_VIDEO_CODEC_FOURCC):
-    """ Return a video writer.
+def video_writer(
+    output_path: str,
+    height: int,
+    width: int,
+    frame_rate: float = 30,
+    fourcc: str = OUTPUT_VIDEO_CODEC_FOURCC,
+) -> Any:
+    """Return a video writer.
 
     Parameters
     ----------
@@ -290,25 +329,21 @@ def video_writer(output_path, height, width,
         playback frame rate in Hz
     fourcc: cv2.VideoWriter_fourcc
         codec, None results in default XVID
+
     Returns
     -------
     an instance of cv2.VideoWriter.
     """
-    fourcc = cv2.VideoWriter_fourcc(*fourcc)
-    out = cv2.VideoWriter(
-                output_path,
-                fourcc,
-                frame_rate,
-                (width, height))
+    fourcc_int = int(cv2.VideoWriter_fourcc(*fourcc))  # type: ignore
+    out = cv2.VideoWriter(output_path, fourcc_int, frame_rate, (width, height))
     logger.info(
-        'opened {} with {} https://www.fourcc.org/ codec, {}fps, '
-        'and ({}x{}) size'.format(
-            output_path, OUTPUT_VIDEO_CODEC_FOURCC, frame_rate,
-            width, height))
+        f"opened {output_path} with {OUTPUT_VIDEO_CODEC_FOURCC} https://www.fourcc.org/ codec, {frame_rate}fps, "
+        f"and ({width}x{height}) size"
+    )
     return out
 
 
-def all_images(data_path):
+def all_images(data_path: str) -> List[str]:
     """Return path of all input images. Assume that the ascending order of
     file names is the same as the order of time sequence.
 
@@ -322,18 +357,17 @@ def all_images(data_path):
     List[str]
         sorted in numerical order.
     """
-    images = glob.glob(os.path.join(data_path, '*.png'))
+    images = glob.glob(os.path.join(data_path, "*.png"))
     if len(images) == 0:
-        raise ValueError(("Input folder is empty or images are not in"
-                          " 'png' format."))
+        raise ValueError("Input folder is empty or images are not in 'png' format.")
     images_sorted = sorted(
-        images,
-        key=lambda line: int(line.split(os.sep)[-1].split('.')[0]))
+        images, key=lambda line: int(line.split(os.sep)[-1].split(".")[0])
+    )
     return images_sorted
 
 
-def read_image(path: str) -> np.ndarray:
-    """Read image and returns it as grayscale np.ndarray float scaled 0-255.
+def read_image(path: str) -> Any:
+    """Read image and returns it as grayscale Any float scaled 0-255.
 
     Parameters
     ----------
@@ -342,71 +376,75 @@ def read_image(path: str) -> np.ndarray:
 
     Returns
     -------
-    img: np.ndarray scaled 0-255
+    img: Any scaled 0-255
     """
     img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
     img = img.astype(np.float32)
     return img
 
 
-def read_aedat_txt_events(fname: str):
+def read_aedat_txt_events(fname: str) -> Any:
     """
-    reads txt data DVS events
+    Reads txt data DVS events
+
     Parameters
     ----------
     fname:str
         filename
+
     Returns
     -------
-        np.ndarray with each row having ts,x,y,pol
+        Any with each row having ts,x,y,pol
         ts is in seconds
         pol is 0,1
     """
-    import pandas as pd
     import numpy as np
+    import pandas as pd  # type: ignore
+
     dat = pd.read_table(
         fname,
-        sep=' ',  # field separator
-        comment='#',  # comment
+        sep=" ",  # field separator
+        comment="#",  # comment
         skipinitialspace=False,
         skip_blank_lines=True,
         error_bad_lines=False,
         warn_bad_lines=True,
-        encoding='utf-8',
-        names=['t', 'x', 'y', 'p'],
-        dtype={'a': np.float64, 'b': np.int32, 'c': np.int32, 'd': np.int32})
+        encoding="utf-8",
+        names=["t", "x", "y", "p"],
+        dtype={"a": np.float64, "b": np.int32, "c": np.int32, "d": np.int32},
+    )
 
     # array[N,4] with each row having ts, x, y, pol.
     # ts is in float seconds. pol is 0,1
     return np.array(dat.values)
 
 
-def select_events_in_roi(events, x, y):
-    """ Select the events inside the region specified by x and y.
+def select_events_in_roi(
+    events: Any, x: Union[int, Tuple[int, int]], y: Union[int, Tuple[int, int]]
+) -> Any:
+    """Select the events inside the region specified by x and y.
     including the x and y values.
 
     Parameters
     ----------
-    events: np.ndarray, [timestamp, x, y, polarity]
+    events: Any, [timestamp, x, y, polarity]
     x: int or tuple, x coordinate.
     y: int or tuple, y coordinate.
 
     Returns
     -------
-    np.ndarray, event just in ROI with the same shape as events.
+    Any, event just in ROI with the same shape as events.
     """
-    x_lim = DVS_WIDTH-1  # events[:, 1].max()
-    y_lim = DVS_HEIGHT-1  # events[:, 2].max()
+    x_lim = DVS_WIDTH - 1  # events[:, 1].max()
+    y_lim = DVS_HEIGHT - 1  # events[:, 2].max()
 
     if isinstance(x, int):
         if x < 0 or x > x_lim:
             raise ValueError("x is not in the valid range.")
-        x_region = (events[:, 1] == x)
+        x_region = events[:, 1] == x
 
     elif isinstance(x, tuple):
-        if x[0] < 0 or x[1] < 0 or \
-           x[0] > x_lim or x[1] > x_lim or \
-           x[0] > x[1]:
+        if x[0] < 0 or x[1] < 0 or x[0] > x_lim or x[1] > x_lim or x[0] > x[1]:
             raise ValueError("x is not in the valid range.")
         x_region = np.logical_and(events[:, 1] >= x[0], events[:, 1] <= x[1])
     else:
@@ -415,12 +453,10 @@ def select_events_in_roi(events, x, y):
     if isinstance(y, int):
         if y < 0 or y > y_lim:
             raise ValueError("y is not in the valid range.")
-        y_region = (events[:, 2] == y)
+        y_region = events[:, 2] == y
 
     elif isinstance(y, tuple):
-        if y[0] < 0 or y[1] < 0 or \
-           y[0] > y_lim or y[1] > y_lim or \
-           y[0] > y[1]:
+        if y[0] < 0 or y[1] < 0 or y[0] > y_lim or y[1] > y_lim or y[0] > y[1]:
             raise ValueError("y is not in the valid range.")
         y_region = np.logical_and(events[:, 2] >= y[0], events[:, 2] <= y[1])
     else:
@@ -432,12 +468,17 @@ def select_events_in_roi(events, x, y):
 
 
 def histogram_events_in_time_bins(
-        events, start=0, stop=3.5,
-        time_bin_ms=50, polarity=None):
-    """ Count the amount of events in each bin.
+    events: Any,
+    start: float = 0,
+    stop: float = 3.5,
+    time_bin_ms: float = 50,
+    polarity: Optional[int] = None,
+) -> Any:
+    """Count the amount of events in each bin.
+
     Parameters
     ----------
-    events: np.ndarray, [timestamp, x, y, polarity].
+    events: Any, [timestamp, x, y, polarity].
     start: float, start time in s
     stop: float, end time in s
     polarity: int or None. If int, it must be 1 or -1.
@@ -447,7 +488,7 @@ def histogram_events_in_time_bins(
     histogram of counts
 
     """
-    time_bin_s = time_bin_ms*0.001
+    time_bin_s = time_bin_ms * 0.001
 
     if start < 0 or stop < 0:
         raise ValueError("start and stop must be int.")
@@ -460,8 +501,9 @@ def histogram_events_in_time_bins(
     bin_num = ticks.shape[0]
     ts_cnt = np.zeros([bin_num - 1, 2])
     for i in range(bin_num - 1):
-        condition = np.logical_and(events[:, 0] >= ticks[i],
-                                   events[:, 0] < ticks[i + 1])
+        condition = np.logical_and(
+            events[:, 0] >= ticks[i], events[:, 0] < ticks[i + 1]
+        )
         if polarity:
             condition = np.logical_and(condition, events[:, 3] == polarity)
         cnt = events[condition].shape[0]
@@ -471,11 +513,13 @@ def histogram_events_in_time_bins(
     return ts_cnt
 
 
-@njit("float64[:, :](float64[:, :], int64[:], int64[:, :])",
-      nogil=True, parallel=False)
-def hist2d_numba_seq(tracks, bins, ranges):
+@njit( # type: ignore
+"float64[:, :](float64[:, :], int64[:], int64[:, :])", nogil=True, parallel=False)
+def hist2d_numba_seq(
+    tracks: Any, bins: Any, ranges: Any
+) -> Any:
     H = np.zeros((bins[0], bins[1]), dtype=np.float64)
-    delta = 1/((ranges[:, 1] - ranges[:, 0]) / bins)
+    delta = 1 / ((ranges[:, 1] - ranges[:, 0]) / bins)
 
     for t in range(tracks.shape[1]):
         i = (tracks[0, t] - ranges[0, 0]) * delta[0]

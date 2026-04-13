@@ -1,8 +1,9 @@
 """Use a static frame, and only generate leak events."""
 
 import os
-import torch
+
 import cv2
+import torch
 
 from v2ecore.emulator import EventEmulator
 
@@ -52,7 +53,7 @@ img = torch.tensor(img, dtype=torch.float32, device=torch_device)
 
 # simulation start
 for it in range(emulation_cycles):
-    print("\rEmulating Frame: {} at {}s".format(it, current_time), end="")
+    print(f"\rEmulating Frame: {it} at {current_time}s", end="")
 
     emulator.generate_events(img, current_time)
 

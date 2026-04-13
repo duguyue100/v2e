@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: iso-8859-1 -*-
 
-"""
+r"""
 Simple desktop integration for Python. This module provides desktop environment
 detection and resource opening support for a selection of common and
 standardised desktop environments.
@@ -78,8 +78,8 @@ The desktop.windows module permits the inspection of desktop windows.
 __version__ = "0.5.4"
 
 import os
-import sys
 import shlex
+import sys
 
 # Provide suitable process creation functions.
 
@@ -121,18 +121,14 @@ except ImportError:
 # Private functions.
 
 def _get_x11_vars():
-
-    "Return suitable environment definitions for X11."
-
+    """Return suitable environment definitions for X11."""
     if not os.environ.get("DISPLAY", "").strip():
         return "DISPLAY=:0.0 "
     else:
         return ""
 
 def _is_xfce():
-
-    "Return whether XFCE is in use."
-
+    """Return whether XFCE is in use."""
     # XFCE detection involves testing the output of a program.
 
     try:
@@ -141,20 +137,16 @@ def _is_xfce():
         return 0
 
 def _is_x11():
-
-    "Return whether the X Window System is in use."
-
+    """Return whether the X Window System is in use."""
     return "DISPLAY" in os.environ
 
 # Introspection functions.
 
 def get_desktop():
-
     """
     Detect the current desktop environment, returning the name of the
     environment. If no environment could be detected, None is returned.
     """
-
     if "KDE_FULL_SESSION" in os.environ or \
         "KDE_MULTIHEAD" in os.environ:
         try:
@@ -164,10 +156,8 @@ def get_desktop():
             pass
         return "KDE"
     elif "GNOME_DESKTOP_SESSION_ID" in os.environ or \
-        "GNOME_KEYRING_SOCKET" in os.environ:
-        return "GNOME"
-    elif 'DESKTOP_SESSION' in os.environ and \
-        os.environ['DESKTOP_SESSION'].lower() == 'lubuntu':
+        "GNOME_KEYRING_SOCKET" in os.environ or ('DESKTOP_SESSION' in os.environ and \
+        os.environ['DESKTOP_SESSION'].lower() == 'lubuntu'):
         return "GNOME"
     elif sys.platform == "darwin":
         return "Mac OS X"
@@ -184,14 +174,12 @@ def get_desktop():
         return None
 
 def use_desktop(desktop):
-
     """
     Decide which desktop should be used, based on the detected desktop and a
     supplied 'desktop' argument (which may be None). Return an identifier
     indicating the desktop type as being either "standard" or one of the results
     from the 'get_desktop' function.
     """
-
     # Attempt to detect a desktop environment.
 
     detected = get_desktop()
@@ -221,18 +209,15 @@ def use_desktop(desktop):
         return None
 
 def is_standard():
-
     """
     Return whether the current desktop supports standardised application
     launching.
     """
-
     return "DESKTOP_LAUNCH" in os.environ
 
 # Activity functions.
 
 def open(url, desktop=None, wait=0):
-
     """
     Open the 'url' in the current desktop's preferred file browser. If the
     optional 'desktop' parameter is specified then attempt to use that
@@ -254,7 +239,6 @@ def open(url, desktop=None, wait=0):
     mechanism to complete before returning (as opposed to immediately returning
     as is the default behaviour).
     """
-
     # Decide on the desktop environment in use.
 
     desktop_in_use = use_desktop(desktop)

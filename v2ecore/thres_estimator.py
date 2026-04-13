@@ -3,51 +3,73 @@
 Author: Yuhuang Hu
 Email : yuhuang.hu@ini.uzh.ch
 """
+
 import os
-
 import subprocess
-import numpy as np
-import h5py
+from typing import Any, List, Optional, Tuple
 
-import matplotlib
-import matplotlib.pyplot as plt
+import h5py
+import numpy as np
 
 from v2ecore.v2e_utils import select_events_in_roi
 
 
 def evaluate_threshold(
-        cfg,
-        idx, threshold, event_count_diffs,
-        ref_event_count=0):
+    cfg: Any,
+    idx: int,
+    threshold: float,
+    event_count_diffs: List[Optional[float]],
+    ref_event_count: int = 0,
+) -> Tuple[float, List[Optional[float]]]:
 
     # v2e commands
     v2e_command = [
         "v2e.py",
-        "-i", cfg.input,
-        "-o", cfg.output_folder,
-        "--dvs_emulator_seed", "42",
-        "--start_time", "{}".format(cfg.start),
-        "--stop_time", "{}".format(cfg.stop),
+        "-i",
+        cfg.input,
+        "-o",
+        cfg.output_folder,
+        "--dvs_emulator_seed",
+        "42",
+        "--start_time",
+        f"{cfg.start}",
+        "--stop_time",
+        f"{cfg.stop}",
         "--overwrite",
-        "--unique_output_folder", "false",
+        "--unique_output_folder",
+        "false",
         "--no_preview",
         "--skip_video_output",
-        "--pos_thres", "{}".format(threshold),
-        "--neg_thres", "{}".format(threshold),
-        "--sigma_thres", "0",
-        "--cutoff_hz", "0",
-        "--leak_rate_hz", "0",
-        "--shot_noise_rate_hz", "0",
-        "--input_frame_rate", "{}".format(cfg.input_frame_rate),
+        "--pos_thres",
+        f"{threshold}",
+        "--neg_thres",
+        f"{threshold}",
+        "--sigma_thres",
+        "0",
+        "--cutoff_hz",
+        "0",
+        "--leak_rate_hz",
+        "0",
+        "--shot_noise_rate_hz",
+        "0",
+        "--input_frame_rate",
+        f"{cfg.input_frame_rate}",
         #  "--input_slowmotion_factor", "17.866666708",
-        "--dvs_h5", "dvs_events.h5",
-        "--dvs_aedat2", "None",
-        "--dvs_text", "None",
-        "--dvs_exposure", "duration", "0.001",
+        "--dvs_h5",
+        "dvs_events.h5",
+        "--dvs_aedat2",
+        "None",
+        "--dvs_text",
+        "None",
+        "--dvs_exposure",
+        "duration",
+        "0.001",
         #  "--disable_slomo",
-        "--auto_timestamp_resolution", "True",
-        "--slomo_model", cfg.slomo_model
-        ]
+        "--auto_timestamp_resolution",
+        "True",
+        "--slomo_model",
+        cfg.slomo_model,
+    ]
 
     # TODO: a proper way to avoid repeatly running slomo model
     #  slomo_vid_path = os.path.join(cfg.output_folder, "video_slomo.avi")
@@ -66,23 +88,27 @@ def evaluate_threshold(
         subprocess.run(v2e_command)
 
         # load events
-        data = h5py.File(os.path.join(
-            cfg.output_folder, "dvs_events.h5"), "r")
+        data = h5py.File(os.path.join(cfg.output_folder, "dvs_events.h5"), "r")
         curr_events = data["events"][()]
         curr_events = select_events_in_roi(curr_events, cfg.x, cfg.y)
         curr_event_count = curr_events.shape[0]
 
         # assign event counts
-        event_count_diffs[idx] = abs(
-            curr_event_count-ref_event_count)
+        event_count_diffs[idx] = float(abs(curr_event_count - ref_event_count))
 
-    return event_count_diffs[idx], event_count_diffs
+    val = event_count_diffs[idx]
+    assert val is not None
+    return val, event_count_diffs
 
 
 def threshold_estimator(
-        cfg,
-        low_thres_idx, high_thres_idx, threshold_range,
-        event_count_diffs, ref_event_count=0):
+    cfg: Any,
+    low_thres_idx: int,
+    high_thres_idx: int,
+    threshold_range: List[float],
+    event_count_diffs: List[Optional[float]],
+    ref_event_count: int = 0,
+) -> Tuple[float, List[Optional[float]]]:
     """Binary search for estimating threshold.
 
     Assume only single minimum.
@@ -104,46 +130,55 @@ def threshold_estimator(
     ref_event_count: int
         should be the reference event count.
     """
-
     # boundary
-    start_idx, end_idx = 0, len(threshold_range)-1
+    start_idx, end_idx = 0, len(threshold_range) - 1
 
-    curr_mid_idx = (high_thres_idx+low_thres_idx)//2
-    while (low_thres_idx < high_thres_idx):
-        print("current range: {}-{}".format(
-            threshold_range[low_thres_idx],
-            threshold_range[high_thres_idx]))
+    curr_mid_idx = (high_thres_idx + low_thres_idx) // 2
+    while low_thres_idx < high_thres_idx:
+        print(
+            f"current range: {threshold_range[low_thres_idx]}-{threshold_range[high_thres_idx]}"
+        )
         # current middle point
-        curr_mid_idx = (high_thres_idx+low_thres_idx)//2
+        curr_mid_idx = (high_thres_idx + low_thres_idx) // 2
         curr_mid = threshold_range[curr_mid_idx]
 
         curr_mid_count, event_count_diffs = evaluate_threshold(
-            cfg, curr_mid_idx, curr_mid, event_count_diffs, ref_event_count)
+            cfg, curr_mid_idx, curr_mid, event_count_diffs, ref_event_count
+        )
 
         # terminate condition, if neighbors are all higher than current,
         # then terminate
         # left neighbor
         if curr_mid_idx > 5:
             left_count, event_count_diffs = evaluate_threshold(
-                cfg, curr_mid_idx-5, threshold_range[curr_mid_idx-5],
-                event_count_diffs, ref_event_count)
+                cfg,
+                curr_mid_idx - 5,
+                threshold_range[curr_mid_idx - 5],
+                event_count_diffs,
+                ref_event_count,
+            )
         else:
             left_count = np.inf
 
         # right neighbor
-        if curr_mid_idx < end_idx-5:
+        if curr_mid_idx < end_idx - 5:
             right_count, event_count_diffs = evaluate_threshold(
-                cfg, curr_mid_idx+5, threshold_range[curr_mid_idx+5],
-                event_count_diffs, ref_event_count)
+                cfg,
+                curr_mid_idx + 5,
+                threshold_range[curr_mid_idx + 5],
+                event_count_diffs,
+                ref_event_count,
+            )
         else:
             right_count = np.inf
 
-        if (curr_mid_idx == start_idx+5 or left_count >= curr_mid_count) and \
-                (curr_mid_idx == end_idx-5 or right_count >= curr_mid_count):
+        if (curr_mid_idx == start_idx + 5 or left_count >= curr_mid_count) and (
+            curr_mid_idx == end_idx - 5 or right_count >= curr_mid_count
+        ):
             return curr_mid, event_count_diffs
-        elif (curr_mid_idx > start_idx and left_count < curr_mid_count):
+        elif curr_mid_idx > start_idx and left_count < curr_mid_count:
             high_thres_idx = curr_mid_idx
-        elif (curr_mid_idx < end_idx and right_count < curr_mid_count):
-            low_thres_idx = curr_mid_idx+1
+        elif curr_mid_idx < end_idx and right_count < curr_mid_count:
+            low_thres_idx = curr_mid_idx + 1
 
     return curr_mid, event_count_diffs

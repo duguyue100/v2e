@@ -5,25 +5,28 @@ Reads DDD hdf5 dvs data and return aps frames + events.
 @latest update: 2019-May-31
 """
 import ctypes
+import logging
+import multiprocessing as mp
 import queue as queue
 import time
-import numpy as np
-import logging
+
 import h5py
+import numpy as np
 from tqdm import tqdm
-import multiprocessing as mp
-from v2ecore.ddd20_utils.datasets import CHUNK_SIZE
-from v2ecore.ddd20_interfaces.caer import unpack_data
+
 from v2ecore.ddd20_interfaces import caer
+from v2ecore.ddd20_interfaces.caer import unpack_data
+from v2ecore.ddd20_utils.datasets import CHUNK_SIZE
 
 logger = logging.getLogger(__name__)
 
 
-class DDD20SimpleReader(object):
-    '''
+class DDD20SimpleReader:
+    """
     Simple reader with no multiprocessing threads to read in DDD recording and
     extract data
-    '''
+    """
+
     ETYPE_DVS = 'polarity_event'
     ETYPE_APS = 'frame_event'
     ETYPE_IMU = 'imu6_event'
@@ -77,9 +80,7 @@ class DDD20SimpleReader(object):
             lastPacket = self.readPacket(self.numPackets-1)
         self.lastTimeS=lastPacket['timestamp']
         self.durationS= self.lastTimeS - self.firstTimeS
-        logger.info('{} has {} packets with start time {:7.2f}s and end time {:7.2f}s (duration {:8.1f}s)'.format(
-            fname, self.numPackets, self.firstTimeS, self.lastTimeS, self.durationS
-        ))
+        logger.info(f'{fname} has {self.numPackets} packets with start time {self.firstTimeS:7.2f}s and end time {self.lastTimeS:7.2f}s (duration {self.durationS:8.1f}s)')
 
         self.lastSearchTime=None # cache last search speed up search
         self.lastSearchPacketNumber=None
@@ -109,6 +110,7 @@ class DDD20SimpleReader(object):
     def readPacket(self, number):
         """
         Reads packet k in the dataset
+
         Parameters
         ----------
         number: number of packet, in range(0,numPackets)
@@ -140,6 +142,7 @@ class DDD20SimpleReader(object):
     def search(self,timeS):
         """
         Search for a starting time
+
         Parameters
         ----------
         timeS relative time in s from start of recording (self.startTimeS)
@@ -149,7 +152,7 @@ class DDD20SimpleReader(object):
         packet number
 
         """
-        logger.info('searching for time {}'.format(timeS))
+        logger.info(f'searching for time {timeS}')
         start=self.firstPacketNumber
         if self.lastSearchTime is not None and self.lastSearchPacketNumber is not None and self.lastSearchTime<timeS:
             start=self.lastSearchPacketNumber
@@ -223,7 +226,7 @@ class DDD20SimpleReader(object):
 
 
 
-class DDD20ReaderMultiProcessing(object):
+class DDD20ReaderMultiProcessing:
     """
     Read aps frames and events from hdf5 files in DDD
     @author: Zhe He
@@ -254,6 +257,7 @@ class DDD20ReaderMultiProcessing(object):
         Read entire file to memory.
 
         Returns
+        -------
         frames, events
         -------
         aps_frame: np.ndarray, [n, width, height]
@@ -320,10 +324,10 @@ class DDD20ReaderMultiProcessing(object):
         return frames, events
 
 def filter_frame(d):
-    '''
-    receives 16 bit frame,
+    """
+    Receives 16 bit frame,
     needs to return unsigned 8 bit img
-    '''
+    """
     # add custom filters here...
     # d['data'] = my_filter(d['data'])
     frame8 = (d['data'] / 256).astype(np.uint8)
@@ -331,7 +335,7 @@ def filter_frame(d):
 
 class HDF5Stream(mp.Process):
     def __init__(self, filename, tables, bufsize=64):
-        super(HDF5Stream, self).__init__()
+        super().__init__()
         self.f = h5py.File(filename, 'r')
         self.tables = tables
         self.q = {k: mp.Queue(bufsize) for k in self.tables}
@@ -406,7 +410,7 @@ class HDF5Stream(mp.Process):
             self.ind_stop[k] = b
 
     def init_search(self, t):
-        ''' start streaming from given time point '''
+        """Start streaming from given time point"""
         if self.run_search.is_set():
             return
         self.skip_to.value = np.uint64(t)
@@ -422,7 +426,7 @@ class HDF5Stream(mp.Process):
         self.run_search.clear()
 
     def _bsearch_by_timestamp(self, k, t):
-        '''performs binary search on timestamp, returns closest block index'''
+        """Performs binary search on timestamp, returns closest block index"""
         l, r = 0, self.ind_stop[k]
         print('searching', k, t)
         while True:
@@ -436,9 +440,10 @@ class HDF5Stream(mp.Process):
 
 
 class MergedStream(mp.Process):
-    ''' Unpacks and merges data from HDF5 stream '''
+    """Unpacks and merges data from HDF5 stream"""
+
     def __init__(self, fbuf, bufsize=256):
-        super(MergedStream, self).__init__()
+        super().__init__()
         self.fbuf = fbuf
         self.ts_start = self.fbuf.ts_start
         self.ts_stop = self.fbuf.ts_stop
@@ -501,7 +506,7 @@ class MergedStream(mp.Process):
             self._inc_current(k)
 
     def _inc_current(self, k):
-        ''' get next event of given type and increment row pointer '''
+        """Get next event of given type and increment row pointer"""
         row = self.current_blk[k][self.i[k]]
         if k == 'dvs':
             ts, d = caer_event_from_row(row)
@@ -547,10 +552,10 @@ class MergedStream(mp.Process):
 
 
 def caer_event_from_row(row):
-    '''
+    """
     Takes binary dvs data as input,
     returns unpacked event data or False if event type does not exist.
-    '''
+    """
     sys_ts, head, body = (v.tobytes() for v in row)
     if not sys_ts:
         # rows with 0 timestamp do not contain any data
@@ -561,7 +566,7 @@ def caer_event_from_row(row):
 
 
 def _flush_q(q):
-    ''' flush queue '''
+    """Flush queue"""
     while True:
         try:
             q.get(timeout=1e-3)

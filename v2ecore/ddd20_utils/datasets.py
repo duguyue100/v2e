@@ -1,22 +1,21 @@
 
-from __future__ import print_function
+import multiprocessing as mp
+
 import h5py
 import numpy as np
-import time
-import multiprocessing as mp
-import queue
 
 SIZE_INC = 2048
 CHUNK_SIZE = 128
 
 
 class HDF5(mp.Process):
-    '''
+    """
     Creates a hdf5 file with datasets of specified types.
     Provides an append method.
-    '''
+    """
+
     def __init__(self, filename='rec.hdf5', tables={}, bufsize=2048*16, chunksize=0, mode='w-', compression=None):
-        super(HDF5, self).__init__()
+        super().__init__()
         self.compression = compression
         self.fname = filename
         self.datasets = {}
@@ -46,7 +45,7 @@ class HDF5(mp.Process):
                 self._save(res)
             except Queue.Empty:
                 pass
-            except IOError:
+            except OSError:
                 print('IOError, continuing')
                 f.write(str(res))
                 pass

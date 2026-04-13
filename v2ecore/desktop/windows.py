@@ -42,8 +42,9 @@ child_windows = window.children()
 See the desktop.windows.Window class for more information.
 """
 
-from desktop import _is_x11, _get_x11_vars, _readfrom, use_desktop
 import re
+
+from desktop import _get_x11_vars, _is_x11, _readfrom, use_desktop
 
 # System functions.
 
@@ -94,16 +95,13 @@ def find_by_name(name):
 # NOTE: X11 is the only supported desktop so far.
 
 class Window:
-
-    "A window on the desktop."
+    """A window on the desktop."""
 
     _name_pattern = re.compile(r':\s+\(.*?\)\s+[-0-9x+]+\s+[-0-9+]+$')
     _absent_names = "(has no name)", "(the root window) (has no name)"
 
     def __init__(self, identifier):
-
-        "Initialise the window with the given 'identifier'."
-
+        """Initialise the window with the given 'identifier'."""
         self.identifier = identifier
 
         # Finder methods (from above).
@@ -159,41 +157,33 @@ class Window:
     # Public methods.
 
     def children(self, all=0):
-
         """
         Return a list of windows which are children of this window. If the
         optional 'all' parameter is set to a true value, all such windows will
         be returned regardless of whether they have any name information.
         """
-
         s = _xwininfo(self.identifier, "children")
-        return self._descendants(s, all and self.find_all or self.find_named)
+        return self._descendants(s, (all and self.find_all) or self.find_named)
 
     def descendants(self, all=0):
-
         """
         Return a list of windows which are descendants of this window. If the
         optional 'all' parameter is set to a true value, all such windows will
         be returned regardless of whether they have any name information.
         """
-
         s = _xwininfo(self.identifier, "tree")
-        return self._descendants(s, all and self.find_all or self.find_named)
+        return self._descendants(s, (all and self.find_all) or self.find_named)
 
     def find(self, callable):
-
         """
         Return windows using the given 'callable' (returning a true or a false
         value when invoked with a window name) for descendants of this window.
         """
-
         s = _xwininfo(self.identifier, "tree")
         return self._descendants(s, callable)
 
     def name(self):
-
-        "Return the name of the window."
-
+        """Return the name of the window."""
         d = _xwininfo(self.identifier, "stats")
 
         # Format is 'xwininfo: Window id: <handle> "<name>"
@@ -201,57 +191,45 @@ class Window:
         return self._get_this_handle_and_name(d["xwininfo"])[1]
 
     def size(self):
-
-        "Return a tuple containing the width and height of this window."
-
+        """Return a tuple containing the width and height of this window."""
         d = _xwininfo(self.identifier, "stats")
         return _get_int_properties(d, ["Width", "Height"])
 
     def position(self):
-
-        "Return a tuple containing the upper left co-ordinates of this window."
-
+        """Return a tuple containing the upper left co-ordinates of this window."""
         d = _xwininfo(self.identifier, "stats")
         return _get_int_properties(d, ["Absolute upper-left X", "Absolute upper-left Y"])
 
     def displayed(self):
-
         """
         Return whether the window is displayed in some way (but not necessarily
         visible on the current screen).
         """
-
         d = _xwininfo(self.identifier, "stats")
         return d["Map State"] != "IsUnviewable"
 
     def visible(self):
-
-        "Return whether the window is displayed and visible."
-
+        """Return whether the window is displayed and visible."""
         d = _xwininfo(self.identifier, "stats")
         return d["Map State"] == "IsViewable"
 
 def list(desktop=None):
-
     """
     Return a list of windows for the current desktop. If the optional 'desktop'
     parameter is specified then attempt to use that particular desktop
     environment's mechanisms to look for windows.
     """
-
     root_window = root(desktop)
     window_list = [window for window in root_window.descendants() if window.displayed()]
     window_list.insert(0, root_window)
     return window_list
 
 def root(desktop=None):
-
     """
     Return the root window for the current desktop. If the optional 'desktop'
     parameter is specified then attempt to use that particular desktop
     environment's mechanisms to look for windows.
     """
-
     # NOTE: The desktop parameter is currently ignored and X11 is tested for
     # NOTE: directly.
 
@@ -261,13 +239,11 @@ def root(desktop=None):
         raise OSError("Desktop '%s' not supported" % use_desktop(desktop))
 
 def find(callable, desktop=None):
-
     """
     Find and return windows using the given 'callable' for the current desktop.
     If the optional 'desktop' parameter is specified then attempt to use that
     particular desktop environment's mechanisms to look for windows.
     """
-
     return root(desktop).find(callable)
 
 # vim: tabstop=4 expandtab shiftwidth=4
