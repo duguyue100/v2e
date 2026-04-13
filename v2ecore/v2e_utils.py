@@ -105,10 +105,7 @@ class ImageFolderReader:
 
 
 def v2e_quit(code: int = 0) -> None:
-    try:
-        quit(code)  # not defined in pydev console, e.g. running in pycharm
-    finally:
-        sys.exit(code)
+    raise KeyboardInterrupt("v2e quit requested by user or fatal error.")
 
 
 def make_output_folder(
@@ -513,11 +510,10 @@ def histogram_events_in_time_bins(
     return ts_cnt
 
 
-@njit( # type: ignore
-"float64[:, :](float64[:, :], int64[:], int64[:, :])", nogil=True, parallel=False)
-def hist2d_numba_seq(
-    tracks: Any, bins: Any, ranges: Any
-) -> Any:
+@njit(  # type: ignore
+    "float64[:, :](float64[:, :], int64[:], int64[:, :])", nogil=True, parallel=False
+)
+def hist2d_numba_seq(tracks: Any, bins: Any, ranges: Any) -> Any:
     H = np.zeros((bins[0], bins[1]), dtype=np.float64)
     delta = 1 / ((ranges[:, 1] - ranges[:, 0]) / bins)
 

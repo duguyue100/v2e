@@ -186,7 +186,7 @@ class SuperSloMo:
             source_frame_path, frame_size, transform=self.to_tensor
         )
         videoFramesloader = torch.utils.data.DataLoader(
-            frames, batch_size=self.batch_size, shuffle=False
+            frames, batch_size=self.batch_size, shuffle=False, num_workers=4
         )
         return videoFramesloader, frames.dim, frames.origDim
 

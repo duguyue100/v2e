@@ -230,7 +230,7 @@ class EventRenderer(object):
             nh = 1 + self.height // self.area_dimension
             self.area_counts = np.zeros(shape=(nw, nh), dtype=int)
 
-        returnedFrames: Optional[Any] = None  # accumulate frames here
+        returned_frames_list = []  # accumulate frames here
 
         # loop over events, creating new frames as needed,
         # until we get to frame for last event.
@@ -283,7 +283,7 @@ class EventRenderer(object):
                 count = 1 + area_counts[x, y]
                 area_counts[x, y] = count
                 if count >= area_count:
-                    area_counts = np.zeros_like(area_counts)
+                    area_counts.fill(0)
                     break
 
             return area_counts, ev_idx
@@ -362,11 +362,7 @@ class EventRenderer(object):
                 self.currentFrame = None
 
                 if return_frames:
-                    returnedFrames = (
-                        np.concatenate((returnedFrames, img[np.newaxis, ...]))
-                        if returnedFrames is not None
-                        else img[np.newaxis, ...]
-                    )
+                    returned_frames_list.append(img[np.newaxis, ...])
 
                 if self.video_output_file:
                     self.video_output_file.write(
@@ -404,7 +400,11 @@ class EventRenderer(object):
                     if k == 27 or k == ord("x"):
                         v2e_quit()
 
-        return returnedFrames
+        return (
+            np.concatenate(returned_frames_list, axis=0)
+            if returned_frames_list
+            else None
+        )
 
     def accumulate_event_frame(self, events: Any, histrange: Any) -> None:
         """Accumulate event frame from an array of events.

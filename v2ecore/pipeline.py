@@ -90,6 +90,12 @@ class V2EPipeline:
             self.writer.write(events)
         return events
 
+    def __enter__(self) -> "V2EPipeline":
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        self.cleanup()
+
     def cleanup(self) -> None:
         """Release all resources."""
         self.writer.close()
