@@ -21,7 +21,7 @@ classifiers = [
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
-    "numpy>=1.24",
+    "numpy>=2.0",
     "torch",
     "torchvision",
     "opencv-python",
@@ -36,9 +36,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-numba = ["numba>=0.58"]
-aedat4 = ["dv-processing>=1.7.8", "numpy<2.0"]
-gui = ["Gooey>=1.0.3"]
+all = ["numba>=0.58", "dv-processing>=1.7.8"]
 dev = [
     "ruff",
     "mypy",

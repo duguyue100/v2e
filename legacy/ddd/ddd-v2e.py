@@ -9,6 +9,7 @@ by comparing the real DVS events with v2e events from DAVIS APS frames.
 
 import argparse
 import logging
+import math
 import os
 from pathlib import Path
 from sys import platform
@@ -225,7 +226,7 @@ if __name__ == "__main__":
         stop_time = davisData.durationS
 
     srcDurationToBeProcessed = stop_time - start_time
-    dvsNumFrames = int(np.math.floor(dvsFps * srcDurationToBeProcessed))
+    dvsNumFrames = int(math.floor(dvsFps * srcDurationToBeProcessed))
     if dvsNumFrames == 0:
         dvsNumFrames = 1  # we need at least 1
     dvsDuration = srcDurationToBeProcessed
