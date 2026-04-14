@@ -21,9 +21,10 @@ def lin_log(x: Any, threshold: int = 20) -> torch.Tensor:
     """
     Linear mapping + logarithmic mapping.
 
-    :param x: float or ndarray
+    Args:
+        x: float or ndarray
         the input linear value in range 0-255 TODO assumes 8 bit
-    :param threshold: float threshold 0-255
+        threshold: float threshold 0-255
         the threshold for transition from linear to log mapping
 
     Returns: the log value

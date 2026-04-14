@@ -48,11 +48,12 @@ class particles(
     ) -> None:
         """Constructs moving-dot class to make frames for v2e
 
-        :param width: width of frames in pixels
-        :param height: height in pixels
-        :param avi_path: folder to write video to, or None if not needed
-        :param preview: set true to show the pix array as cv frame
-        :param arg_list: list of arguments from super
+        Args:
+            width: width of frames in pixels
+            height: height in pixels
+            avi_path: folder to write video to, or None if not needed
+            preview: set true to show the pix array as cv frame
+            arg_list: list of arguments from super
         """
         super().__init__(width, height, avi_path, preview, arg_list, parent_args)
         parser = argparse.ArgumentParser(arg_list)
@@ -255,13 +256,15 @@ class particles(
             fill_dot(pix_arr, self.position[0], self.position[1], fg, bg, self.radius)
 
     def total_frames(self) -> int:
-        """:returns: total number of frames"""
+        """Returns:
+        total number of frames"""
         return len(self.times)
 
     def next_frame(self) -> tuple[np.ndarray | None, float]:  # type: ignore
         """Returns the next frame and its time, or None when finished
 
-        :returns: (frame, time)
+        Returns:
+            (frame, time)
             If there are no more frames, then frame is None.
             time is in seconds.
         """
@@ -317,13 +320,14 @@ def fill_dot(
 ):
     """Generates intensity values for the 'dot'
 
-    :param pix_arr: the 2d pixel array to fill values to
-    :param x: center of dot x in pixels
-    :param y: center of dot y in pixels
-    :param d: square radius range to generate dot over
-    :param fg: the foreground intensity (peak value) of center of dot
-    :param bg: the background value outside of dot that we approach at edge of dot
-    :param radius: the sigma of Gaussian, i.e. radius of dot
+    Args:
+        pix_arr: the 2d pixel array to fill values to
+        x: center of dot x in pixels
+        y: center of dot y in pixels
+        d: square radius range to generate dot over
+        fg: the foreground intensity (peak value) of center of dot
+        bg: the background value outside of dot that we approach at edge of dot
+        radius: the sigma of Gaussian, i.e. radius of dot
     """
     x0, y0 = round(x), round(y)
     d = int(radius * 2) + 1

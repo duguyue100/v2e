@@ -53,22 +53,21 @@ class EventRenderer(object):
     ) -> None:
         """Init.
 
-        Parameters
-        ----------
-        output_path: str,
-            path of folder to hold output video
-        dvs_vid: str or None, str name of video, e.g. dvs.avi
-            else None.
-        full_scale_count:int,
-            full scale black/white DVS event count value
-        exposure_mode: ExposureMode,
-            mode to finish exposure of DVS frames
-        exposure_value: Numeric,
-            either float duration in seconds or int count
-        area_dimension: int,
-            size of area_count in pixels in output space
-        preview: bool
-            show preview in cv2 window
+        Args:
+            output_path: str,
+                path of folder to hold output video
+            dvs_vid: str or None, str name of video, e.g. dvs.avi
+                else None.
+            full_scale_count:int,
+                full scale black/white DVS event count value
+            exposure_mode: ExposureMode,
+                mode to finish exposure of DVS frames
+            exposure_value: Numeric,
+                either float duration in seconds or int count
+            area_dimension: int,
+                size of area_count in pixels in output space
+            preview: bool
+                show preview in cv2 window
         """
         self.exposure_mode = exposure_mode
         self.exposure_value = exposure_value
@@ -186,23 +185,21 @@ class EventRenderer(object):
         that is past the end of the frame duration.
         These filled frames are returned.
 
-        Parameters
-        ----------
-        event_arr:np.ndarray
-            [n,4] consisting of n events each with [ts,x,y,pol],
-            ts are in float seconds
-        height: height of output video in pixels;
-            events are histogramed to this width in pixels.
-            I.e. if input has 100 pixels and height is 30 pixels,
-            roughly 3 pixels will be collected to one output pixel
-        width: width of output video in pixels
-        return_frames: return Frames if True, return None otherwise
+        Args:
+            event_arr:np.ndarray
+                [n,4] consisting of n events each with [ts,x,y,pol],
+                ts are in float seconds
+            height: height of output video in pixels;
+                events are histogramed to this width in pixels.
+                I.e. if input has 100 pixels and height is 30 pixels,
+                roughly 3 pixels will be collected to one output pixel
+            width: width of output video in pixels
+            return_frames: return Frames if True, return None otherwise
 
         Returns:
-        -------
-        rendered frames from these events, or None if no new frame was filled.
-        Frames are np.ndarray with [n,h,w] shape,
-        where n is frame, h is height, and w is width
+            rendered frames from these events, or None if no new frame was filled.
+            Frames are np.ndarray with [n,h,w] shape,
+            where n is frame, h is height, and w is width
         """
         self.width = width
         self.height = height

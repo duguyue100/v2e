@@ -36,12 +36,11 @@ class DDD20SimpleReader:
     def __init__(self, fname, rotate180=True):
         """Init
 
-        Parameters
-        ----------
-        fname: str
-            path of input hdf5 file.
-        rotate180: bool, True
-            rotate input 180 deg (both frames and events)
+        Args:
+            fname: str
+                path of input hdf5 file.
+            rotate180: bool, True
+                rotate input 180 deg (both frames and events)
         """
         logger.info("making reader for DDD recording " + str(fname))
         self.rotate180 = rotate180
@@ -123,13 +122,11 @@ class DDD20SimpleReader:
         """
         Reads packet k in the dataset
 
-        Parameters
-        ----------
-        number: number of packet, in range(0,numPackets)
+        Args:
+            number: number of packet, in range(0,numPackets)
 
         Returns:
-        -------
-        packet of data, or False if packet is outside of range or cannot be extracted
+            packet of data, or False if packet is outside of range or cannot be extracted
         """
         if number >= self.numPackets or number < 0:
             return False
@@ -161,13 +158,11 @@ class DDD20SimpleReader:
         """
         Search for a starting time
 
-        Parameters
-        ----------
-        timeS relative time in s from start of recording (self.startTimeS)
+        Args:
+            timeS relative time in s from start of recording (self.startTimeS)
 
         Returns:
-        -------
-        packet number
+            packet number
 
         """
         logger.info("searching for time %s", timeS)
@@ -267,14 +262,13 @@ class DDD20ReaderMultiProcessing:
     ):  # todo add rotate180 to mp reader
         """Init
 
-        Parameters
-        ----------
-        fname: str
-            path of input hdf5 file.
-        startTimeS: float
-            start time of the stream in seconds.
-        stopTimeS: float
-            stop time of the stream in seconds.
+        Args:
+            fname: str
+                path of input hdf5 file.
+            startTimeS: float
+                start time of the stream in seconds.
+            stopTimeS: float
+                stop time of the stream in seconds.
         """
         self.f_in = HDF5Stream(fname, {"dvs"})
         self.m = MergedStream(self.f_in)
@@ -287,14 +281,13 @@ class DDD20ReaderMultiProcessing:
         Read entire file to memory.
 
         Returns:
-        -------
-        frames, events
-        -------
-        aps_frame: np.ndarray, [n, width, height]
-            aps frames
-        events: numpy record array.
-            events, col names: ["ts", "y", "x", "polarity"], \
-                data types: ["<f8", "<i8", "<i8", "<i8"]
+            frames, events
+            -------
+            aps_frame: np.ndarray, [n, width, height]
+                aps frames
+            events: numpy record array.
+                events, col names: ["ts", "y", "x", "polarity"], \
+                    data types: ["<f8", "<i8", "<i8", "<i8"]
         """
         sys_ts, t_offset, current = 0, 0, 0
         timestamp = 0

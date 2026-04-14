@@ -42,9 +42,9 @@ class Frames(data.Dataset[Any]):  # type: ignore
         self, array: Any, transform: Optional[Callable[..., Any]] = None
     ) -> None:
         """
-        @Parameters:
-            array: N-d numpy array.
-            transform: Compose object.
+        Args:
+                array: N-d numpy array.
+                transform: Compose object.
         """
         self.array = array
         self.transform = transform
@@ -103,9 +103,9 @@ class FramesDirectory(data.Dataset[Any]):  # type: ignore
         transform: Optional[Callable[..., Any]] = None,
     ) -> None:
         """
-        @Parameters:
-            array: N-d numpy array.
-            transform: Compose object.
+        Args:
+                array: N-d numpy array.
+                transform: Compose object.
         """
         self.files = sorted(
             glob.glob(f"{folder_path}" + parsing),

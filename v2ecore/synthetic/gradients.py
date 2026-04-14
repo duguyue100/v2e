@@ -39,10 +39,11 @@ class gradients(
     ) -> None:
         """Constructs moving-dot class to make frames for v2e
 
-        :param width: width of frames in pixels
-        :param height: height in pixels
-        :param avi_path: folder to write video to, or None if not needed
-        :param preview: set true to show the pix array as cv frame
+        Args:
+            width: width of frames in pixels
+            height: height in pixels
+            avi_path: folder to write video to, or None if not needed
+            preview: set true to show the pix array as cv frame
         """
         super().__init__(width, height, avi_path, preview, arg_list)
         parser = argparse.ArgumentParser(arg_list)
@@ -90,13 +91,15 @@ class gradients(
         )
 
     def total_frames(self) -> int:
-        """:returns: total number of frames"""
+        """Returns:
+        total number of frames"""
         return len(self.times)
 
     def next_frame(self) -> tuple[np.ndarray | None, float]:  # type: ignore
         """Returns the next frame and its time, or None when finished
 
-        :returns: (frame, time)
+        Returns:
+            (frame, time)
            frame is a pix_arrary np.ndarray((self.height, self.w), dtype=np.uint8)
            Note y is the first dimension in accordance with OpenCV convention. Pixel 0,0 is at upper left of image.
            If there are no more frames frame should return None.

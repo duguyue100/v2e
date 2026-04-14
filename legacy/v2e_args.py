@@ -72,14 +72,12 @@ def tuple_type(strings: str) -> Tuple[int, ...]:
 def v2e_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     """
 
-    Parameters
-    ----------
-    parser
-        the argparse object to be populated with arguments
+    Args:
+        parser
+            the argparse object to be populated with arguments
 
     Returns:
-    -------
-     the parser with all the standard v2e arguments
+         the parser with all the standard v2e arguments
 
     """
     v2ecore_path = Path(__file__).parent
@@ -628,16 +626,14 @@ def write_args_info(
     """
     Writes arguments to logger and file named from startup __main__
 
-    Parameters
-    ----------
-    args: parser.parse_args()
-    path: file to write to
-    other_args: possible extra arguments\
-    command_line: the whole command line
+    Args:
+        args: parser.parse_args()
+        path: file to write to
+        other_args: possible extra arguments\
+        command_line: the whole command line
 
     Returns:
-    -------
-    full path to file
+        full path to file
     """
     import __main__
 

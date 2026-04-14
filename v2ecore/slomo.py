@@ -59,29 +59,27 @@ class SuperSloMo:
         """
         Init
 
-        Parameters
-        ----------
-        model: str,
-            path of the stored Pytorch checkpoint.
-        upsampling_factor: object,
-            slow motion factor.
-        auto_upsample: bool,
-            Use automatic upsampling, but limit minimum to upsampling_factor
-        batch_size: int,
-            batch size.
-        video_path: str or None,
-            str path to folder where you want videos of original and
-            slomo video to be stored, else None
-        vid_orig: str or None,
-            name of output original (input) video at slo motion rate,
-            needs video_path to be set too
-        vid_slomo: str or None,
-            name of slomo video file, needs video_path to be set too
+        Args:
+            model: str,
+                path of the stored Pytorch checkpoint.
+            upsampling_factor: object,
+                slow motion factor.
+            auto_upsample: bool,
+                Use automatic upsampling, but limit minimum to upsampling_factor
+            batch_size: int,
+                batch size.
+            video_path: str or None,
+                str path to folder where you want videos of original and
+                slomo video to be stored, else None
+            vid_orig: str or None,
+                name of output original (input) video at slo motion rate,
+                needs video_path to be set too
+            vid_slomo: str or None,
+                name of slomo video file, needs video_path to be set too
 
         Returns:
-        -------
-            None in case of slowdown_factor=int value.
-            np.array of deltaTimes as fractions of source frame interval, based on limiting flow to at most 1 pixel per interframe.
+                None in case of slowdown_factor=int value.
+                np.array of deltaTimes as fractions of source frame interval, based on limiting flow to at most 1 pixel per interframe.
         """
         if torch.cuda.is_available():
             self.device = "cuda:0"
@@ -156,9 +154,8 @@ class SuperSloMo:
         """Create the Transform instances.
 
         Returns:
-        -------
-        to_tensor: Pytorch Transform instance.
-        to_image: Pytorch Transform instance.
+            to_tensor: Pytorch Transform instance.
+            to_image: Pytorch Transform instance.
         """
         mean = [0.428]
         std = [1]
@@ -180,16 +177,14 @@ class SuperSloMo:
         """Return a Dataloader instance, which is constructed with \
             APS frames.
 
-        Parameters
-        ----------
-        images: np.ndarray, [N, W, H]
-            input APS frames.
+        Args:
+            images: np.ndarray, [N, W, H]
+                input APS frames.
 
         Returns:
-        -------
-        videoFramesloader: Pytorch Dataloader instance.
-        frames.dim: new size.
-        frames.origDim: original size.
+            videoFramesloader: Pytorch Dataloader instance.
+            frames.dim: new size.
+            frames.origDim: original size.
         """
         #  frames = dataloader.Frames(images, transform=self.to_tensor)
         frames = dataloader.FramesDirectory(
@@ -205,16 +200,14 @@ class SuperSloMo:
     ) -> Tuple[torch.nn.Module, torch.nn.Module, torch.nn.Module]:
         """Initialize the pytorch model
 
-        Parameters
-        ----------
-        dim: tuple
-            size of resized images.
+        Args:
+            dim: tuple
+                size of resized images.
 
         Returns:
-        -------
-        flow_estimator: nn.Module
-        warpper: nn.Module
-        interpolator: nn.Module
+            flow_estimator: nn.Module
+            warpper: nn.Module
+            interpolator: nn.Module
         """
         if not Path(self.checkpoint).is_file():
             raise FileNotFoundError(
@@ -253,39 +246,37 @@ class SuperSloMo:
         """Run interpolation. \
             Interpolated frames will be saved in folder self.output_folder.
 
-        Parameters
-        ----------
-        source_frame_path: path that contains source file
-        output_folder:str, folder that stores the interpolated images,
-            numbered 1:N*slowdown_factor.
-        frame_size: tuple (width, height)
+        Args:
+            source_frame_path: path that contains source file
+            output_folder:str, folder that stores the interpolated images,
+                numbered 1:N*slowdown_factor.
+            frame_size: tuple (width, height)
 
 
-        Frames will include the input frames, i.e.
-        if there are 2 input frames and slowdown_factor=10,
-        there will be 10 frames written,
-        starting with the first input frame, and ending before
-        the 2nd input frame.
+            Frames will include the input frames, i.e.
+            if there are 2 input frames and slowdown_factor=10,
+            there will be 10 frames written,
+            starting with the first input frame, and ending before
+            the 2nd input frame.
 
-        If  slowdown factor=2, then the first output frame will be
-        the first input frame, and the 2nd output frame will be
-        a new synthetic frame halfway to the 2nd frame.
+            If  slowdown factor=2, then the first output frame will be
+            the first input frame, and the 2nd output frame will be
+            a new synthetic frame halfway to the 2nd frame.
 
-        If the slowdown_factor is 3, then there will
-        the first input frame followed by 2 more interframes.
+            If the slowdown_factor is 3, then there will
+            the first input frame followed by 2 more interframes.
 
-        The output will never include the 2nd input frame.
+            The output will never include the 2nd input frame.
 
-        i.e. if there are 2 input frames and slowdown_factor=10,
-        there will be 10 frames written, frame0 is the first input frame, and frame9 is the 9th interpolated frame.
-        Frame1 is *not* included, so that it can be fed as input for the next interpolation.
+            i.e. if there are 2 input frames and slowdown_factor=10,
+            there will be 10 frames written, frame0 is the first input frame, and frame9 is the 9th interpolated frame.
+            Frame1 is *not* included, so that it can be fed as input for the next interpolation.
 
         Returns:
-        -------
-        deltaTimes: np.array,
-            Array of delta times relative to src frame intervals. This array must be multiplied by the source frame interval to obtain the times of the frames. There will be a variable number of times depending on auto_upsample and upsampling_factor.
-        avg_upsampling_factor: float,
-            Average upsampling factor, which can be used to compute the average timestamp resolution.
+            deltaTimes: np.array,
+                Array of delta times relative to src frame intervals. This array must be multiplied by the source frame interval to obtain the times of the frames. There will be a variable number of times depending on auto_upsample and upsampling_factor.
+            avg_upsampling_factor: float,
+                Average upsampling factor, which can be used to compute the average timestamp resolution.
         """
         if not output_folder:
             raise ValueError(
@@ -580,15 +571,13 @@ class SuperSloMo:
         """Return path of all input images. Assume that the ascending order of
         file names is the same as the order of time sequence.
 
-        Parameters
-        ----------
-        data_path: str
-            path of the folder which contains input images.
+        Args:
+            data_path: str
+                path of the folder which contains input images.
 
         Returns:
-        -------
-        List[str]
-            sorted in numerical order.
+            List[str]
+                sorted in numerical order.
         """
         images = list(Path(data_path).glob("*.png"))
         if len(images) == 0:
@@ -606,14 +595,13 @@ class SuperSloMo:
     def __read_image(path: Path) -> "np.ndarray[Any, Any]":
         """Read image.
 
-        Parameters
-        ----------
-        path: str
-            path of image.
+        Args:
+            path: str
+                path of image.
 
         Return:
-        ------
-            np.ndarray
+            ------
+                np.ndarray
         """
         img = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
         return img
@@ -623,15 +611,13 @@ class SuperSloMo:
     ) -> "np.ndarray[Any, Any]":
         """Interpolate the timestamps.
 
-        Parameters
-        ----------
-        ts: np.array, np.float64,
-            timestamps of input frames.
+        Args:
+            ts: np.array, np.float64,
+                timestamps of input frames.
 
         Returns:
-        -------
-        np.array, np.float64,
-            interpolated timestamps.
+            np.array, np.float64,
+                interpolated timestamps.
         """
         new_ts = []
         for i in range(ts.shape[0] - 1):

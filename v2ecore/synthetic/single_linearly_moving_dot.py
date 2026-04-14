@@ -33,10 +33,11 @@ class single_linearly_moving_dot:  # the class name should be the same as the fi
     ) -> None:
         """Constructs moving-dot class to make frames for v2e
 
-        :param width: width of frames in pixels
-        :param height: height in pixels
-        :param avi_path: folder to write video to, or None if not needed
-        :param preview: set true to show the pix array as cv frame
+        Args:
+            width: width of frames in pixels
+            height: height in pixels
+            avi_path: folder to write video to, or None if not needed
+            preview: set true to show the pix array as cv frame
         """
         self.avi_path = avi_path  # to write AVI
         self.contrast: float = 3  # compare this with pos_thres and neg_thres and sigma_thr, e.g. use 1.2 for dot to be 20% brighter than backgreound
@@ -76,13 +77,15 @@ class single_linearly_moving_dot:  # the class name should be the same as the fi
             cv2.resizeWindow(self.cv2name, self.w, self.h)
 
     def total_frames(self) -> int:
-        """:returns: total number of frames"""
+        """Returns:
+        total number of frames"""
         return len(self.times)
 
     def next_frame(self) -> tuple[np.ndarray | None, float]:
         """Returns the next frame and its time, or None when finished
 
-        :returns: (frame, time)
+        Returns:
+            (frame, time)
             If there are no more frames frame is None.
             time is in seconds.
         """

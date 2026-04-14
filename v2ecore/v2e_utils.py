@@ -83,9 +83,11 @@ class ImageFolderReader:
         """
         Reads the next frame
 
-        :param skip: skip the frame
+        Args:
+            skip: skip the frame
 
-        :returns: always True
+        Returns:
+            always True
         """
         if not skip:
             frame = cv2.imread(self.image_file_list[self.current_frame_idx])
@@ -120,12 +122,14 @@ def make_output_folder(
     unique_output_folder: bool,
 ) -> str:
     """Makes the output folder if it does not exist yet, or makes unique new numbered folder
-    :param output_folder_base: the base name of folder. If it is absolute path, then make folder at absolute location, otherwise relative to startup folder
-    :param suffix_counter: a counter value to append
-    :param overwrite: to overwrite existing folder
-    :param unique_output_folder: set True to make a new uniquely named numbered folder
+    Args:
+        output_folder_base: the base name of folder. If it is absolute path, then make folder at absolute location, otherwise relative to startup folder
+        suffix_counter: a counter value to append
+        overwrite: to overwrite existing folder
+        unique_output_folder: set True to make a new uniquely named numbered folder
 
-    :returns: output folder path
+    Returns:
+        output folder path
     """
     if overwrite and unique_output_folder:
         logger.error(
@@ -246,22 +250,20 @@ def video_writer(
 ) -> Any:
     """Return a video writer.
 
-    Parameters
-    ----------
-    output_path: str,
-        path to store output video.
-    height: int,
-        height of a frame.
-    width: int,
-        width of a frame.
-    frame_rate: int
-        playback frame rate in Hz
-    fourcc: cv2.VideoWriter_fourcc
-        codec, None results in default XVID
+    Args:
+        output_path: str,
+            path to store output video.
+        height: int,
+            height of a frame.
+        width: int,
+            width of a frame.
+        frame_rate: int
+            playback frame rate in Hz
+        fourcc: cv2.VideoWriter_fourcc
+            codec, None results in default XVID
 
     Returns:
-    -------
-    an instance of cv2.VideoWriter.
+        an instance of cv2.VideoWriter.
     """
     fourcc_int = int(cv2.VideoWriter_fourcc(*fourcc))
 
@@ -281,15 +283,13 @@ def all_images(data_path: Path) -> List[str]:
     """Return path of all input images. Assume that the ascending order of
     file names is the same as the order of time sequence.
 
-    Parameters
-    ----------
-    data_path: str
-        path of the folder which contains input images.
+    Args:
+        data_path: str
+            path of the folder which contains input images.
 
     Returns:
-    -------
-    List[str]
-        sorted in numerical order.
+        List[str]
+            sorted in numerical order.
     """
     images = list(Path(data_path).glob("*.png"))
     if len(images) == 0:
@@ -301,14 +301,12 @@ def all_images(data_path: Path) -> List[str]:
 def read_image(path: Path) -> Any:
     """Read image and returns it as grayscale Any float scaled 0-255.
 
-    Parameters
-    ----------
-    path: str
-        path of image.
+    Args:
+        path: str
+            path of image.
 
     Returns:
-    -------
-    img: Any scaled 0-255
+        img: Any scaled 0-255
     """
     img = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
     img = img.astype(np.float32)
@@ -321,15 +319,13 @@ def select_events_in_roi(
     """Select the events inside the region specified by x and y.
     including the x and y values.
 
-    Parameters
-    ----------
-    events: Any, [timestamp, x, y, polarity]
-    x: int or tuple, x coordinate.
-    y: int or tuple, y coordinate.
+    Args:
+        events: Any, [timestamp, x, y, polarity]
+        x: int or tuple, x coordinate.
+        y: int or tuple, y coordinate.
 
     Returns:
-    -------
-    Any, event just in ROI with the same shape as events.
+        Any, event just in ROI with the same shape as events.
     """
     x_lim = DVS_WIDTH - 1  # events[:, 1].max()
     y_lim = DVS_HEIGHT - 1  # events[:, 2].max()
@@ -372,16 +368,14 @@ def histogram_events_in_time_bins(
 ) -> Any:
     """Count the amount of events in each bin.
 
-    Parameters
-    ----------
-    events: Any, [timestamp, x, y, polarity].
-    start: float, start time in s
-    stop: float, end time in s
-    polarity: int or None. If int, it must be 1 or -1.
+    Args:
+        events: Any, [timestamp, x, y, polarity].
+        start: float, start time in s
+        stop: float, end time in s
+        polarity: int or None. If int, it must be 1 or -1.
 
     Returns:
-    -------
-    histogram of counts
+        histogram of counts
 
     """
     time_bin_s = time_bin_ms * 0.001

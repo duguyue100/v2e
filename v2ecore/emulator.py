@@ -76,17 +76,15 @@ class EventEmulator:
     ) -> torch.Tensor:
         """
 
-        Parameters
-        ----------
-            the input 'voltage',
-        v:Tensor
-            actually log intensity in base e units
-        tau:Optional[Tensor]
-            if None, tau is set internally
+        Args:
+                the input 'voltage',
+            v:Tensor
+                actually log intensity in base e units
+            tau:Optional[Tensor]
+                if None, tau is set internally
 
         Returns:
-        -------
-        the time derivative of the signal
+            the time derivative of the signal
 
         """
         if tau is None:
@@ -138,48 +136,47 @@ class EventEmulator:
         label_signal_noise: bool = False,
     ) -> None:
         """
-        Parameters
-        ----------
-        pos_thres: float, default 0.21
-            nominal threshold of triggering positive event in log intensity.
-        neg_thres: float, default 0.17
-            nominal threshold of triggering negative event in log intensity.
-        sigma_thres: float, default 0.03
-            std deviation of threshold in log intensity.
-        cutoff_hz: float,
-            3dB cutoff frequency in Hz of DVS photoreceptor
-        leak_rate_hz: float
-            leak event rate per pixel in Hz,
-            from junction leakage in reset switch
-        shot_noise_rate_hz: float
-            shot noise rate in Hz
-        photoreceptor_noise: bool
-            model photoreceptor noise to create the desired shot noise rate
-        seed: int, default=0
-            seed for random threshold variations,
-            fix it to nonzero value to get same mismatch every time
-        show_dvs_model_state: List[str],
-            None or 'new_frame','diff_frame' etc; see EventEmulator.MODEL_STATES
-        output_folder: str
-            Path to optional model state videos
-        output_width: int,
-            width of output in pixels
-        output_height: int,
-            height of output in pixels
-        device: str
-            device, either 'cpu' or 'cuda' (selected automatically by caller depending on GPU availability)
-        cs_lambda_pixels: float
-            space constant of surround in pixels, or None to disable surround inhibition
-        cs_tau_p_ms: float
-            time constant of lowpass filter of surround in ms or 0 to make surround 'instantaneous'
-        hdr: bool
-            Treat input as HDR floating point logarithmic gray scale with 255 input scaled as ln(255)=5.5441
-        scidvs: bool
-            Simulate the high gain adaptive photoreceptor SCIDVS pixel
-        record_single_pixel_states: tuple
-            Record this pixel states to 'pixel_states.npy'
-        label_signal_noise: bool
-            Record signal and noise event labels to a CSV file
+        Args:
+            pos_thres: float, default 0.21
+                nominal threshold of triggering positive event in log intensity.
+            neg_thres: float, default 0.17
+                nominal threshold of triggering negative event in log intensity.
+            sigma_thres: float, default 0.03
+                std deviation of threshold in log intensity.
+            cutoff_hz: float,
+                3dB cutoff frequency in Hz of DVS photoreceptor
+            leak_rate_hz: float
+                leak event rate per pixel in Hz,
+                from junction leakage in reset switch
+            shot_noise_rate_hz: float
+                shot noise rate in Hz
+            photoreceptor_noise: bool
+                model photoreceptor noise to create the desired shot noise rate
+            seed: int, default=0
+                seed for random threshold variations,
+                fix it to nonzero value to get same mismatch every time
+            show_dvs_model_state: List[str],
+                None or 'new_frame','diff_frame' etc; see EventEmulator.MODEL_STATES
+            output_folder: str
+                Path to optional model state videos
+            output_width: int,
+                width of output in pixels
+            output_height: int,
+                height of output in pixels
+            device: str
+                device, either 'cpu' or 'cuda' (selected automatically by caller depending on GPU availability)
+            cs_lambda_pixels: float
+                space constant of surround in pixels, or None to disable surround inhibition
+            cs_tau_p_ms: float
+                time constant of lowpass filter of surround in ms or 0 to make surround 'instantaneous'
+            hdr: bool
+                Treat input as HDR floating point logarithmic gray scale with 255 input scaled as ln(255)=5.5441
+            scidvs: bool
+                Simulate the high gain adaptive photoreceptor SCIDVS pixel
+            record_single_pixel_states: tuple
+                Record this pixel states to 'pixel_states.npy'
+            label_signal_noise: bool
+                Record signal and noise event labels to a CSV file
         """
         self.no_events_warning_count = 0
         logger.info(
@@ -416,15 +413,13 @@ class EventEmulator:
     def _init(self, first_frame_linear: Any) -> None:
         """
 
-        Parameters
-        ----------
-        first_frame_linear: Any
-            the first frame, used to initialize data structures
+        Args:
+            first_frame_linear: Any
+                the first frame, used to initialize data structures
 
         Returns:
-        -------
-            new instance
-        -------
+                new instance
+            -------
 
         """
         logger.debug(
@@ -530,14 +525,12 @@ class EventEmulator:
         Shows the ndarray in window, and save frame to avi file if self.save_dvs_model_state==True.
         The displayed image is normalized according to its type (grayscale, log, or signed log).
 
-        Parameters
-        ----------
-        inp: the array
-        name: label for window
+        Args:
+            inp: the array
+            name: label for window
 
         Returns:
-        -------
-        None
+            None
         """
         img = np.array(inp.cpu().data.numpy())
         (min, max) = EventEmulator.MODEL_STATES[name]
@@ -587,18 +580,16 @@ class EventEmulator:
     def generate_events(self, new_frame: Any, t_frame: float) -> Optional[Any]:
         """Compute events in new frame.
 
-        Parameters
-        ----------
-        new_frame: Any
-            [height, width], NOTE y is first dimension, like in matlab the column, x is 2nd dimension, i.e. row.
-        t_frame: float
-            timestamp of new frame in float seconds
+        Args:
+            new_frame: Any
+                [height, width], NOTE y is first dimension, like in matlab the column, x is 2nd dimension, i.e. row.
+            t_frame: float
+                timestamp of new frame in float seconds
 
         Returns:
-        -------
-        events: Any if any events, else None
-            [N, 4], each row contains [timestamp, x coordinate, y coordinate, sign of event (+1 ON, -1 OFF)].
-            NOTE x,y, NOT y,x.
+            events: Any if any events, else None
+                [N, 4], each row contains [timestamp, x coordinate, y coordinate, sign of event (+1 ON, -1 OFF)].
+                NOTE x,y, NOT y,x.
         """
         # base_frame: the change detector input,
         #              stores memorized brightness values
@@ -849,20 +840,25 @@ class EventEmulator:
                 # NOT at the value at the end of the refractory period.
                 # Brian McReynolds thinks that this effect probably only makes a significant difference if the temporal resolution of the signal
                 # is high enough so that dt is less than one refractory period.
-                pos_time_since_last_spike = ts[i] - self.timestamp_mem
-                neg_time_since_last_spike = ts[i] - self.timestamp_mem
+                if self.refractory_period_s > 0:
+                    pos_time_since_last_spike = ts[i] - self.timestamp_mem
+                    neg_time_since_last_spike = ts[i] - self.timestamp_mem
 
-                # filter the events
-                pos_cord = pos_cord & (
-                    pos_time_since_last_spike > self.refractory_period_s
-                )
-                neg_cord = neg_cord & (
-                    neg_time_since_last_spike > self.refractory_period_s
-                )
+                    # filter the events
+                    pos_cord = pos_cord & (
+                        pos_time_since_last_spike > self.refractory_period_s
+                    )
+                    neg_cord = neg_cord & (
+                        neg_time_since_last_spike > self.refractory_period_s
+                    )
 
-                # assign new history
-                self.timestamp_mem = torch.where(pos_cord, ts[i], self.timestamp_mem)
-                self.timestamp_mem = torch.where(neg_cord, ts[i], self.timestamp_mem)
+                    # assign new history
+                    self.timestamp_mem = torch.where(
+                        pos_cord, ts[i], self.timestamp_mem
+                    )
+                    self.timestamp_mem = torch.where(
+                        neg_cord, ts[i], self.timestamp_mem
+                    )
 
                 # update event count frames with the shot noise
                 final_pos_evts_frame += pos_cord
@@ -1053,10 +1049,14 @@ class EventEmulator:
         ts: torch.Tensor,
     ) -> Optional[torch.Tensor]:
         """Gets event list from ON and OFF event coordinate lists.
-        :param pos_event_xy: Tensor[2,n] where n is number of ON events, [0,n] are y addresses and [1,n] are x addresses
-        :param neg_event_xy: Tensor[2,m] where m is number of ON events, [0,m] are y addresses and [1,m] are x addresses
-        :param ts: the timestamp given to all events (scalar)
-        :returns: Tensor[n+m,4] of AER [t, x, y, p]
+
+        Args:
+            pos_event_xy: Tensor[2,n] where n is number of ON events, [0,n] are y addresses and [1,n] are x addresses
+            neg_event_xy: Tensor[2,m] where m is number of ON events, [0,m] are y addresses and [1,m] are x addresses
+            ts: the timestamp given to all events (scalar)
+
+        Returns:
+            Tensor[n+m,4] of AER [t, x, y, p]
         """
         # update event stats
         num_pos_events = pos_event_xy[0].shape[0]

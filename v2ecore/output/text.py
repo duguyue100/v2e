@@ -29,8 +29,9 @@ class TextEventWriter:
 
     def __init__(self, filepath: Path, label_signal_noise: bool = False):
         """Constructs the CSV writer
-        :param filepath: the full path to file
-        :param label_signal_noise: set True to append column labeling signal (1) and noise (0)
+        Args:
+            filepath: the full path to file
+            label_signal_noise: set True to append column labeling signal (1) and noise (0)
         """
         self.filepath = filepath
         # edit below to match your device from https://inivation.com/support/software/fileformat/#aedat-20
@@ -91,17 +92,15 @@ class TextEventWriter:
     def write(self, events: Any, signnoise_label: Any = None) -> None:
         """Append events to text output
 
-        Parameters
-        ----------
-         events: Any with N events if any events, else None
-             [N, 4], each row contains [timestamp, x coordinate, y coordinate, sign of event (+1 ON, -1 OFF)].
-             NOTE x,y, NOT y,x.
-        signnoise: Any
-            [N] each entry is 1 for signal or 0 for noise
+        Args:
+             events: Any with N events if any events, else None
+                 [N, 4], each row contains [timestamp, x coordinate, y coordinate, sign of event (+1 ON, -1 OFF)].
+                 NOTE x,y, NOT y,x.
+            signnoise: Any
+                [N] each entry is 1 for signal or 0 for noise
 
         Returns:
-        -------
-         None
+             None
         """
         if self.file is None:
             raise Exception("output file closed already")

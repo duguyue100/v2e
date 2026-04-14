@@ -17,15 +17,16 @@ def fill_dot(
 ):
     """Generates intensity values for the 'dot'
 
-    :param pix_arr: the 2d pixel array to fill values to
-    :param x: center of dot x in pixels
-    :param y: center of dot y in pixels
-    :param x0: rounded x location, used to compute delta x
-    :param y0: rounded y location, used to compute delta y
-    :param d: square radius range to generate dot over
-    :param fg: the foreground intensity (peak value) of center of dot
-    :param bg: the background value outside of dot that we approach at edge of dot
-    :param dot_sigma: the sigma of Gaussian, i.e. radius of dot
+    Args:
+        pix_arr: the 2d pixel array to fill values to
+        x: center of dot x in pixels
+        y: center of dot y in pixels
+        x0: rounded x location, used to compute delta x
+        y0: rounded y location, used to compute delta y
+        d: square radius range to generate dot over
+        fg: the foreground intensity (peak value) of center of dot
+        bg: the background value outside of dot that we approach at edge of dot
+        dot_sigma: the sigma of Gaussian, i.e. radius of dot
     """
     for iy in range(-d, +d):
         for ix in range(-d, +d):

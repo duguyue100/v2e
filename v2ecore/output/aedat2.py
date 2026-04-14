@@ -26,12 +26,11 @@ class Aedat2EventWriter:
     ) -> None:
         """
 
-        Parameters
-        ----------
-        filepath - full path to output AEDAT file, including ".aedat" or ".aedat2" extension
-        output_width - the width of output address space
-        output_height - the height of output address space
-        :param label_signal_noise: set True to label noise events as 'special'
+        Args:
+            filepath - full path to output AEDAT file, including ".aedat" or ".aedat2" extension
+            output_width - the width of output address space
+            output_height - the height of output address space
+            :param label_signal_noise: set True to label noise events as 'special'
         """
         self.filepath = filepath
         self.file = None
@@ -164,17 +163,15 @@ class Aedat2EventWriter:
     def write(self, events: Any, signnoise_label: Any = None) -> None:
         """Append events to AEDAT-2.0 output
 
-        Parameters
-        ----------
-        events: Any if any events, else None
-            [N, 4], each row contains [timestamp, x coordinate, y coordinate, sign of event (+1 ON, -1 OFF)].
-            NOTE x,y, NOT y,x.
-        signnoise: Any
-          [N] each entry is 1 for signal or 0 for noise
+        Args:
+            events: Any if any events, else None
+                [N, 4], each row contains [timestamp, x coordinate, y coordinate, sign of event (+1 ON, -1 OFF)].
+                NOTE x,y, NOT y,x.
+            signnoise: Any
+              [N] each entry is 1 for signal or 0 for noise
 
         Returns:
-        -------
-        None
+            None
         """
         if self.file is None:
             return

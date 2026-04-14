@@ -30,12 +30,13 @@ class SyntheticInput:  # the class name should be the same as the filename, like
     ) -> None:
         """Prototype constructor
 
-        :param width: width of frames in pixels
-        :param height: height in pixels
-        :param avi_path: folder to write video to, or None if not needed
-        :param preview: set true to show the pix array as cv frame
-        :param args: pass in unparsed list of extra synthetic method arguments from command line via this list
-        :param parent_args: pass in parsed arguments to v2e from command line via this list
+        Args:
+            width: width of frames in pixels
+            height: height in pixels
+            avi_path: folder to write video to, or None if not needed
+            preview: set true to show the pix array as cv frame
+            args: pass in unparsed list of extra synthetic method arguments from command line via this list
+            parent_args: pass in parsed arguments to v2e from command line via this list
         """
         self.height = height
         self.width = width
@@ -73,13 +74,15 @@ class SyntheticInput:  # the class name should be the same as the filename, like
         atexit.register(self.cleanup)
 
     def total_frames(self) -> int:
-        """:returns: total number of frames"""
+        """Returns:
+        total number of frames"""
         return 0
 
     def next_frame(self) -> tuple[np.ndarray | None, float]:
         """Returns the next frame and its time, or None when finished
 
-        :returns: (frame, time)
+        Returns:
+            (frame, time)
             frame is a pix_arrary np.ndarray((self.height, self.w), dtype=np.uint8)
             Note y is the first dimension in accordance with OpenCV convention. Pixel 0,0 is at upper left of image.
             If there are no more frames frame should return None.
