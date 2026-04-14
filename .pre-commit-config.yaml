@@ -1,21 +1,29 @@
 exclude: '^legacy/'
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.0  # pin to latest stable
+    rev: v0.15.10  # pin to latest stable
     hooks:
       - id: ruff
         args: [--fix]
       - id: ruff-format
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.13.0  # pin to latest stable
+  - repo: local
     hooks:
-      - id: mypy
-        additional_dependencies: [pydantic>=2.0]
-        args: [--ignore-missing-imports]
+      - id: mypy_v2ecore
+        name: mypy_v2ecore
+        entry: python -m mypy --show-error-codes v2ecore
+        language: system
+        pass_filenames: false
+        stages: [manual]
+      - id: mypy_tests
+        name: mypy_tests
+        entry: python -m mypy --show-error-codes tests
+        language: system
+        pass_filenames: false
+        stages: [manual]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-yaml
       - id: check-toml

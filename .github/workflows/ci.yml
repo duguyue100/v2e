@@ -22,7 +22,8 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -e ".[dev]"
-      - run: mypy v2ecore
+      - run: mypy --show-error-codes v2ecore
+      - run: mypy --show-error-codes tests
 
   test:
     runs-on: ubuntu-latest

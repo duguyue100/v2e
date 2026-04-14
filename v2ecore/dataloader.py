@@ -18,7 +18,7 @@ import torch.utils.data as data
 from PIL import Image
 
 
-class Frames(data.Dataset[Any]):  # type: ignore[misc]
+class Frames(data.Dataset[Any]):
     """
     Load frames from an N-d array, and transform them into tensor.
     @Author:
@@ -89,7 +89,7 @@ class Frames(data.Dataset[Any]):  # type: ignore[misc]
         return fmt_str
 
 
-class FramesDirectory(data.Dataset[Any]):  # type: ignore[misc]
+class FramesDirectory(data.Dataset[Any]):
     """
     Load frames from a directory that has individual frame records,
     and transform them into tensor.
