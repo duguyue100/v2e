@@ -216,9 +216,9 @@ class Aedat2EventWriter:
         # now out is numpy array holding int32 timestamp,address array, i.e. ts0, ad0, ts1, ad1, etc
         if self.file:
             self.file.write(bytes)  # java is big-endian, so  byteswap to get this
-        self.numEventsWritten += n
-        onCount = np.count_nonzero(p)
-        offCount = n - onCount
+        self.numEventsWritten += int(n)
+        onCount = int(np.count_nonzero(p))
+        offCount = int(n - onCount)
         self.numOnEvents += onCount
         self.numOffEvents += offCount
         self.file.flush()

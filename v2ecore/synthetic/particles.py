@@ -198,13 +198,16 @@ class particles(
             if start_on_edge:
                 # generate particle on some edge, moving into the array with random velocity
                 edge = np.random.randint(0, 4)  # nsew
+                pos_x: float
+                pos_y: float
+                angle_rad: float
                 if edge == 0 or edge == 1:  # north/south
-                    pos_x = np.random.randint(0, width)
-                    pos_y = 0 if edge == 0 else height
+                    pos_x = float(np.random.randint(0, width))
+                    pos_y = 0.0 if edge == 0 else float(height)
                 else:  # e or w
-                    pos_y = np.random.randint(0, height)
-                    pos_x = 0 if edge == 3 else width
-                angle_rad = 0
+                    pos_y = float(np.random.randint(0, height))
+                    pos_x = 0.0 if edge == 3 else float(width)
+                angle_rad = 0.0
                 if edge == 1:  # n
                     angle_rad = np.random.uniform(np.pi / 4, -0.75 * np.pi)
 
@@ -260,7 +263,7 @@ class particles(
         total number of frames"""
         return len(self.times)
 
-    def next_frame(self) -> tuple[np.ndarray | None, float]:  # type: ignore
+    def next_frame(self) -> tuple[np.ndarray | None, float]:
         """Returns the next frame and its time, or None when finished
 
         Returns:
@@ -317,7 +320,7 @@ class particles(
 @njit  # type: ignore
 def fill_dot(
     pix_arr: np.ndarray, x: float, y: float, fg: float, bg: float, radius: float
-):
+) -> None:
     """Generates intensity values for the 'dot'
 
     Args:

@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class Down(nn.Module):  # type: ignore
+class Down(nn.Module):  # type: ignore[misc]
     def __init__(self, inChannels: int, outChannels: int, filterSize: int) -> None:
         super().__init__()
         self.conv1 = nn.Conv2d(
@@ -31,7 +31,7 @@ class Down(nn.Module):  # type: ignore
         return x
 
 
-class Up(nn.Module):  # type: ignore
+class Up(nn.Module):  # type: ignore[misc]
     def __init__(self, inChannels: int, outChannels: int) -> None:
         super().__init__()
         self.conv1 = nn.Conv2d(inChannels, outChannels, 3, stride=1, padding=1)
@@ -44,7 +44,7 @@ class Up(nn.Module):  # type: ignore
         return x
 
 
-class UNet(nn.Module):  # type: ignore
+class UNet(nn.Module):  # type: ignore[misc]
     def __init__(self, inChannels: int, outChannels: int) -> None:
         super().__init__()
         self.conv1 = nn.Conv2d(inChannels, 32, 7, stride=1, padding=3)
@@ -78,7 +78,7 @@ class UNet(nn.Module):  # type: ignore
         return x
 
 
-class BackWarp(nn.Module):  # type: ignore
+class BackWarp(nn.Module):  # type: ignore[misc]
     def __init__(self, W: int, H: int, device: Any) -> None:
         super().__init__()
         gridX, gridY = np.meshgrid(np.arange(W), np.arange(H))

@@ -267,7 +267,7 @@ def video_writer(
     """
     fourcc_int = int(cv2.VideoWriter_fourcc(*fourcc))
 
-    out = cv2.VideoWriter(output_path, fourcc_int, frame_rate, (width, height))
+    out = cv2.VideoWriter(str(output_path), fourcc_int, frame_rate, (width, height))
     logger.info(
         "opened %s with %s https://www.fourcc.org/ codec, %sfps, and (%sx%s) size",
         output_path,
@@ -309,7 +309,8 @@ def read_image(path: Path) -> Any:
         img: Any scaled 0-255
     """
     img = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
-    img = img.astype(np.float32)
+    if img is not None:
+        img = img.astype(np.float32)
     return img
 
 

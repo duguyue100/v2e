@@ -14,7 +14,7 @@ def fill_dot(
     fg: int,
     bg: int,
     dot_sigma: float,
-):
+) -> None:
     """Generates intensity values for the 'dot'
 
     Args:

@@ -166,19 +166,29 @@ exclude = ["^legacy/", "^examples/", ".*\\.ipynb$"]
 # Gradual adoption: ignore errors in legacy modules initially
 [[tool.mypy.overrides]]
 module = [
-    "legacy.*",
 ]
 ignore_errors = true
 
 # Third-party stubs
 [[tool.mypy.overrides]]
 module = [
+    "scipy",
+    "scipy.*",
+    "torchvision",
+    "torchvision.*",
+    "cv2",
     "cv2.*",
+    "numba",
     "numba.*",
+    "dv_processing",
     "dv_processing.*",
+    "engineering_notation",
     "engineering_notation.*",
+    "screeninfo",
     "screeninfo.*",
+    "h5py",
     "h5py.*",
+    "tqdm",
     "tqdm.*",
     "v2ecore.v2e_utils",
 ]

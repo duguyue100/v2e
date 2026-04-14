@@ -127,7 +127,7 @@ class barberpole(
         total number of frames"""
         return len(self.times)
 
-    def next_frame(self) -> tuple[np.ndarray | None, float]:  # type: ignore
+    def next_frame(self) -> tuple[np.ndarray | None, float]:
         """Returns the next frame and its time, or None when finished
 
         Returns:
