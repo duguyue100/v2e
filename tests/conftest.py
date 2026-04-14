@@ -6,25 +6,25 @@ import pytest
 from v2ecore.config import V2EConfig
 
 
-@pytest.fixture  # type: ignore
+@pytest.fixture
 def default_config() -> V2EConfig:
     """Default V2E configuration for tests."""
     return V2EConfig()
 
 
-@pytest.fixture  # type: ignore
+@pytest.fixture
 def sample_frame() -> np.ndarray:
     """A 64x64 grayscale test frame."""
     return np.random.rand(64, 64).astype(np.float32) * 255
 
 
-@pytest.fixture  # type: ignore
+@pytest.fixture
 def constant_frame() -> np.ndarray:
     """Uniform 128-valued 64x64 frame (should produce no events)."""
     return np.full((64, 64), 128, dtype=np.float32)
 
 
-@pytest.fixture  # type: ignore
+@pytest.fixture
 def step_frames() -> tuple[np.ndarray, np.ndarray]:
     """Two frames with a brightness step (should produce events everywhere)."""
     dark = np.full((64, 64), 50, dtype=np.float32)
@@ -32,7 +32,7 @@ def step_frames() -> tuple[np.ndarray, np.ndarray]:
     return dark, bright
 
 
-@pytest.fixture  # type: ignore
-def tmp_output(tmp_path) -> Path:
+@pytest.fixture
+def tmp_output(tmp_path: Path) -> Path:
     """Temporary output directory."""
-    return tmp_path / "output"  # type: ignore
+    return tmp_path / "output"
