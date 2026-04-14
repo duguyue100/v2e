@@ -101,7 +101,8 @@ class EventEmulator:
                 EventEmulator.SCIDVS_TAU_S, device=v.device, dtype=v.dtype
             )
         )
-        dvdt = torch.div(1, tau_tensor) * torch.sinh(v / efold)
+        v_clamped = torch.clamp(v / efold, min=-20, max=20)
+        dvdt = torch.div(1, tau_tensor) * torch.sinh(v_clamped)
         return dvdt
 
     SCIDVS_GAIN: float = 2  # gain after highpass
@@ -235,6 +236,9 @@ class EventEmulator:
                     1
                 )
             self.photoreceptor_noise_samples: List[float] = []
+
+        self.noise_voltage_cache: Dict[str, Any] = {}
+        self.lp_filter_cache: Dict[str, Any] = {}
 
         self.leak_jitter_fraction = leak_jitter_fraction
         self.noise_rate_cov_decades = noise_rate_cov_decades
@@ -658,6 +662,7 @@ class EventEmulator:
             inten01=inten01,
             delta_time=delta_time,
             cutoff_hz=self.cutoff_hz,
+            cache=self.lp_filter_cache,
         )
 
         # add photoreceptor noise if we are using photoreceptor noise to create shot noise
@@ -671,12 +676,18 @@ class EventEmulator:
                 pos_thr=self.pos_thres_nominal,
                 neg_thr=self.neg_thres_nominal,
                 sigma_thr=self.sigma_thres,
+                cache=self.noise_voltage_cache,
             )
             noise = self.photoreceptor_noise_vrms * torch.randn(
                 self.log_new_frame.shape, dtype=torch.float32, device=self.device
             )
             self.photoreceptor_noise_arr = low_pass_filter(  # type: ignore
-                noise, self.photoreceptor_noise_arr, None, delta_time, self.cutoff_hz
+                noise,
+                self.photoreceptor_noise_arr,
+                None,
+                delta_time,
+                self.cutoff_hz,
+                cache=self.lp_filter_cache,
             )
             self.photoreceptor_noise_samples.append(
                 self.photoreceptor_noise_arr[0, 0].cpu().item()
@@ -760,7 +771,7 @@ class EventEmulator:
                 )
 
         # generate event map
-        # print(f'\ndiff_frame max={torch.max(self.diff_frame)} pos_thres mean={torch.mean(self.pos_thres)} expect {int(torch.max(self.diff_frame)/torch.mean(self.pos_thres))} max events')
+        # logger.info(f'\ndiff_frame max={torch.max(self.diff_frame)} pos_thres mean={torch.mean(self.pos_thres)} expect {int(torch.max(self.diff_frame)/torch.mean(self.pos_thres))} max events')
         pos_evts_frame, neg_evts_frame = compute_event_map(  # type: ignore
             self.diff_frame, self.pos_thres, self.neg_thres
         )
@@ -799,7 +810,7 @@ class EventEmulator:
             dtype=torch.float32,
             device=self.device,
         )
-        # print(f'ts={ts}')
+        # logger.info(f'ts={ts}')
 
         # record final events update
         final_pos_evts_frame = torch.zeros(
@@ -818,6 +829,7 @@ class EventEmulator:
             self.no_events_warning_count += 1
             # max_num_events_any_pixel = 1
         else:  # there are signal events to generate
+            events_chunks = []
             for i in range(max_num_events_any_pixel):
                 # events for this iteration
 
@@ -837,21 +849,20 @@ class EventEmulator:
                 # NOT at the value at the end of the refractory period.
                 # Brian McReynolds thinks that this effect probably only makes a significant difference if the temporal resolution of the signal
                 # is high enough so that dt is less than one refractory period.
-                if self.refractory_period_s > ts_step:
-                    pos_time_since_last_spike = pos_cord * ts[i] - self.timestamp_mem
-                    neg_time_since_last_spike = neg_cord * ts[i] - self.timestamp_mem
+                pos_time_since_last_spike = ts[i] - self.timestamp_mem
+                neg_time_since_last_spike = ts[i] - self.timestamp_mem
 
-                    # filter the events
-                    pos_cord = pos_time_since_last_spike > self.refractory_period_s
-                    neg_cord = neg_time_since_last_spike > self.refractory_period_s
+                # filter the events
+                pos_cord = pos_cord & (
+                    pos_time_since_last_spike > self.refractory_period_s
+                )
+                neg_cord = neg_cord & (
+                    neg_time_since_last_spike > self.refractory_period_s
+                )
 
-                    # assign new history
-                    self.timestamp_mem = torch.where(
-                        pos_cord, ts[i], self.timestamp_mem
-                    )
-                    self.timestamp_mem = torch.where(
-                        neg_cord, ts[i], self.timestamp_mem
-                    )
+                # assign new history
+                self.timestamp_mem = torch.where(pos_cord, ts[i], self.timestamp_mem)
+                self.timestamp_mem = torch.where(neg_cord, ts[i], self.timestamp_mem)
 
                 # update event count frames with the shot noise
                 final_pos_evts_frame += pos_cord
@@ -879,9 +890,11 @@ class EventEmulator:
                     events_curr_iter = events_curr_iter[idx].view(
                         events_curr_iter.size()
                     )
-                    events = torch.cat((events, events_curr_iter))
+                    events_chunks.append(events_curr_iter)
 
                 # end of iteration over max_num_events_any_pixel
+            if events_chunks:
+                events = torch.cat([events] + events_chunks)
 
         # NOISE: add shot temporal noise here by
         # simple Poisson process that has a base noise rate
@@ -1027,7 +1040,7 @@ class EventEmulator:
             tsout = events[:, 0]
             tsoutdiff = np.diff(tsout)
             if np.any(tsoutdiff < 0):
-                print("nonmonotonic timestamp in events")
+                logger.info("nonmonotonic timestamp in events")
 
             return events  # ndarray shape (N,4) where N is the number of events are rows are [t,x,y,p]. Confirmed by Tobi Oct 2023
         else:
@@ -1164,9 +1177,10 @@ class EventEmulator:
                 change_ten = (
                     p_term + h_term
                 )  # change_ten is the change in the diffuser voltage
-                max_change = torch.max(
-                    torch.abs(change_ten)
-                ).item()  # find the maximum absolute change in any diffuser pixel
+                if steps % 10 == 0:
+                    max_change = torch.max(
+                        torch.abs(change_ten)
+                    ).item()  # find the maximum absolute change in any diffuser pixel
                 h_ten += change_ten
                 steps += 1
 
@@ -1186,21 +1200,21 @@ if __name__ == "__main__":
         device="cuda",
     )
 
-    cap = cv2.VideoCapture(Path(os.environ["HOME"]) / "v2e_tutorial_video.avi")
+    cap = cv2.VideoCapture(str(Path(os.environ["HOME"]) / "v2e_tutorial_video.avi"))
 
     # num of frames
     fps = cap.get(cv2.CAP_PROP_FPS)
-    print(f"FPS: {fps}")
+    logger.info("FPS: %s", fps)
     num_of_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    print(f"Num of frames: {num_of_frames}")
+    logger.info("Num of frames: %s", num_of_frames)
 
     duration = num_of_frames / fps
     delta_t = 1 / fps
     current_time = 0.0
 
-    print(f"Clip Duration: {duration}s")
-    print(f"Delta Frame Tiem: {delta_t}s")
-    print("=" * 50)
+    logger.info("Clip Duration: %ss", duration)
+    logger.info("Delta Frame Tiem: %ss", delta_t)
+    logger.info("=" * 50)
 
     new_events = None
 
@@ -1212,9 +1226,9 @@ if __name__ == "__main__":
         if ret is True and idx < 10:
             # convert it to Luma frame
             luma_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            print("=" * 50)
-            print(f"Current Frame {idx} Time {current_time}")
-            print("-" * 50)
+            logger.info("=" * 50)
+            logger.info("Current Frame %s Time %s", idx, current_time)
+            logger.info("-" * 50)
 
             # # emulate events
             new_events = emulator.generate_events(luma_frame, current_time)
@@ -1230,15 +1244,20 @@ if __name__ == "__main__":
                 event_time = new_events[-1, 0] - new_events[0, 0]
                 event_rate_kevs = (num_events / delta_t) / 1e3
 
-                print(
-                    f"Number of Events: {num_events}\n"
-                    f"Duration: {event_time}\n"
-                    f"Start T: {start_t:.5f}\n"
-                    f"End T: {end_t:.5f}\n"
-                    f"Event Rate: {event_rate_kevs:.2f}KEV/s"
+                logger.info(
+                    "Number of Events: %s\n"
+                    "Duration: %s\n"
+                    "Start T: %.5f\n"
+                    "End T: %.5f\n"
+                    "Event Rate: %.2fKEV/s",
+                    num_events,
+                    event_time,
+                    start_t,
+                    end_t,
+                    event_rate_kevs,
                 )
             idx += 1
-            print("=" * 50)
+            logger.info("=" * 50)
         else:
             break
 

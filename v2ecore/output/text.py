@@ -73,7 +73,7 @@ class TextEventWriter:
             "# Creation time: %I:%M%p %B %d %Y\n"
         )  # Tue Jan 26 13:57:06 CET 2016
         time_str = (
-            f"# Creation time: System.currentTimeMillis() {int(time.time() * 1000.)}\n"
+            f"# Creation time: System.currentTimeMillis() {int(time.time() * 1000.0)}\n"
         )
         user = f"# User name: {getpass.getuser()}\n"
         header = (
@@ -117,17 +117,16 @@ class TextEventWriter:
         if self.flipy:
             y = (self.sizey - 1) - y
         p = ((events[:, 3] + 1) / 2).astype(np.int32)  # go from -1/+1 to 0,1
-        for i in range(n):
-            if signnoise_label is None:
-                if self.file:
-                    self.file.write(
-                        f"{t[i]} {x[i]} {y[i]} {p[i]}\n"
-                    )  # todo there must be vector way
-            else:
-                if self.file:
-                    self.file.write(
-                        f"{t[i]} {x[i]} {y[i]} {p[i]} {int(signnoise_label[i])}\n"
-                    )  # write with additonal signal/noise label column cast to int (1=signal, 0=noise)
+        if signnoise_label is None:
+            if self.file:
+                np.savetxt(self.file, np.column_stack((t, x, y, p)), fmt="%f %d %d %d")
+        else:
+            if self.file:
+                np.savetxt(
+                    self.file,
+                    np.column_stack((t, x, y, p, signnoise_label)),
+                    fmt="%f %d %d %d %d",
+                )
         self.numEventsWritten += n
 
 

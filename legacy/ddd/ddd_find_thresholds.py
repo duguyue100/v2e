@@ -9,8 +9,6 @@ import numpy as np
 
 # matplotlib.use("TkAgg") # use in pycharm to avoid scientific mode plot?
 from tqdm import tqdm
-
-from v2e import desktop  # type: ignore
 from v2e.ddd20_utils.ddd_h5_reader import DDD20SimpleReader
 from v2e.emulator import EventEmulator
 from v2e.slomo import SuperSloMo
@@ -19,6 +17,8 @@ from v2e.v2e_utils import DVS_HEIGHT
 from v2e.v2e_utils import DVS_WIDTH
 from v2e.v2e_utils import inputDDDFileDialog
 from v2e.v2e_utils import select_events_in_roi
+
+from v2e import desktop  # type: ignore
 
 
 logging.basicConfig()

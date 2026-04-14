@@ -139,7 +139,7 @@ class Aedat2EventWriter:
         date = datetime.datetime.now().strftime(
             "# Creation time: %I:%M%p %B %d %Y\r\n"
         )  # Tue Jan 26 13:57:06 CET 2016
-        f"# Creation time: System.currentTimeMillis() {int(time.time() * 1000.)}\r\n"
+        f"# Creation time: System.currentTimeMillis() {int(time.time() * 1000.0)}\r\n"
         user = f"# User name: {getpass.getuser()}\r\n"
         if self.label_signal_noise:
             sn_comment = "# noise events are labeled as addressed external input events when the --label_signal_noise option is selected for output\r\n"
@@ -182,7 +182,7 @@ class Aedat2EventWriter:
         if len(events) == 0:
             return
         n = events.shape[0]
-        t = (1e6 * events[:, 0]).astype(np.int32)  # to us from seconds
+        t = (1e6 * events[:, 0]).astype(np.uint32).view(np.int32)  # to us from seconds
         if np.any(np.diff(t) < 0):
             logger.warning("nonmonontoic timestamp")
         x = events[:, 1].astype(np.int32)

@@ -10,12 +10,12 @@ from pathlib import Path
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
-
-from v2e import desktop  # type: ignore
 from v2e.v2e_args import write_args_info
 from v2e.v2e_utils import histogram_events_in_time_bins
 from v2e.v2e_utils import select_events_in_roi
 from v2e.v2e_utils import video_writer
+
+from v2e import desktop  # type: ignore
 
 
 logging.basicConfig()

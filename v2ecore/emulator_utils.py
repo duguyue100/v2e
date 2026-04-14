@@ -36,9 +36,6 @@ def lin_log(x: Any, threshold: int = 20) -> torch.Tensor:
 
     y = torch.where(x <= threshold, x * f, torch.log(x))
 
-    rounding = 1e8
-    y = torch.round(y * rounding) / rounding
-
     return y.float()
 
 
@@ -53,6 +50,7 @@ def low_pass_filter(
     inten01: Any,
     delta_time: Any,
     cutoff_hz: float = 0,
+    cache: dict[str, Any] | None = None,
 ) -> Any:
     """Compute intensity-dependent low-pass filter."""
     if cutoff_hz <= 0:
@@ -65,15 +63,20 @@ def low_pass_filter(
         max_eps = torch.max(eps)
         if max_eps > 0.3:
             IIR_MAX_WARNINGS = 10
-            if low_pass_filter.iir_warning_count < IIR_MAX_WARNINGS:  # type: ignore
+            warnings_count = (
+                cache.get("iir_warning_count", 0) if cache is not None else 0
+            )
+            if warnings_count < IIR_MAX_WARNINGS:
                 logger.warning(
                     "IIR lowpass filter update has large maximum update eps=%s from delta_time/tau=%s/%s",
                     max_eps,
                     delta_time,
                     tau,
                 )
-                low_pass_filter.iir_warning_count += 1  # type: ignore
-                if low_pass_filter.iir_warning_count == IIR_MAX_WARNINGS:  # type: ignore
+                warnings_count += 1
+                if cache is not None:
+                    cache["iir_warning_count"] = warnings_count
+                if warnings_count == IIR_MAX_WARNINGS:
                     logger.warning(
                         "Supressing further warnings about inaccurate IIR lowpass filtering"
                     )
@@ -85,9 +88,6 @@ def low_pass_filter(
     new_lp_log_frame = (1 - eps) * lp_log_frame + eps * log_new_frame
 
     return new_lp_log_frame
-
-
-low_pass_filter.iir_warning_count = 0  # type: ignore
 
 
 def subtract_leak_current(
@@ -134,6 +134,7 @@ def compute_photoreceptor_noise_voltage(
     pos_thr: float,
     neg_thr: float,
     sigma_thr: float,
+    cache: dict[str, Any],
 ) -> float:
     """Computes the necessary photoreceptor noise voltage"""
 
@@ -143,12 +144,10 @@ def compute_photoreceptor_noise_voltage(
         vn = thr / thr_per_vn
         return vn
 
-    if compute_photoreceptor_noise_voltage.last_sample_rate is not None:  # type: ignore
-        diff = np.abs(
-            sample_rate_hz / compute_photoreceptor_noise_voltage.last_sample_rate - 1  # type: ignore
-        )
+    if cache.get("last_sample_rate") is not None:
+        diff = np.abs(sample_rate_hz / cache["last_sample_rate"] - 1)
         if diff < 0.1:
-            return float(compute_photoreceptor_noise_voltage.last_vn)  # type: ignore
+            return float(cache["last_vn"])
 
     rate_per_bw = (shot_noise_rate_hz / f3db) / 2
     if rate_per_bw > 0.5:
@@ -172,42 +171,36 @@ def compute_photoreceptor_noise_voltage(
 
     vn = float(np.mean(vns))
 
-    compute_photoreceptor_noise_voltage.last_sample_rate = sample_rate_hz  # type: ignore
+    cache["last_sample_rate"] = sample_rate_hz
     tau = 1 / (f3db * 2 * math.pi)
     dt = 1 / sample_rate_hz
     t = np.arange(0, 1000 * tau, dt)
     rin = vn * np.random.default_rng().standard_normal(t.shape)
     rms_in = np.std(rin)
-    rout = np.zeros_like(rin)
 
     eps = dt / tau
     eps_limit = 0.1
     if eps > eps_limit:
         logger.warning("eps=%s for IIR lowpass is >%s", eps, eps_limit)
-    rout[0] = 0
 
-    for i in range(1, len(rin)):
-        rout[i] = rout[i - 1] * (1 - eps) + rin[i] * eps
+    import scipy.signal
+
+    rout = scipy.signal.lfilter([eps], [1, -(1 - eps)], rin)
+
     rms_out = np.std(rout)
     scale = rms_in / rms_out
     vnscaled = float(scale * vn)
-    np.std(scale * rin)
 
-    compute_photoreceptor_noise_voltage.last_vn = vnscaled  # type: ignore
+    cache["last_vn"] = vnscaled
 
-    if not compute_photoreceptor_noise_voltage.vrms_computation_printed:  # type: ignore
+    if not cache.get("vrms_computation_printed", False):
         logger.info(
             "For desired shot_noise_rate_hz=%s Hz, computed photoreceptor_noise_rms=%s",
             shot_noise_rate_hz,
             vn,
         )
-        compute_photoreceptor_noise_voltage.vrms_computation_printed = True  # type: ignore
+        cache["vrms_computation_printed"] = True
     return vnscaled
-
-
-compute_photoreceptor_noise_voltage.vrms_computation_printed = False  # type: ignore
-compute_photoreceptor_noise_voltage.last_sample_rate = None  # type: ignore
-compute_photoreceptor_noise_voltage.last_vn = None  # type: ignore
 
 
 def generate_shot_noise(

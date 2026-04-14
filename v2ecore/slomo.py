@@ -233,7 +233,7 @@ class SuperSloMo:
         for param in interpolator.parameters():
             param.requires_grad = False
 
-        warper = model.backWarp(dim[0], dim[1], self.device)
+        warper = model.BackWarp(dim[0], dim[1], self.device)
         warper = warper.to(self.device)
 
         # dict1 = torch.load(self.checkpoint, map_location='cpu')
@@ -303,6 +303,8 @@ class SuperSloMo:
                 self.batch_size,
             )
             while nframes / self.batch_size < 2:
+                if self.batch_size <= 1:
+                    break
                 self.batch_size = int(self.batch_size / 2)
             logger.info("using batch_size=%s", self.batch_size)
         video_frame_loader, dim, ori_dim = self.__load_data(

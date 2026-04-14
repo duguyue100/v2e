@@ -107,7 +107,10 @@ class FramesDirectory(data.Dataset[Any]):  # type: ignore
             array: N-d numpy array.
             transform: Compose object.
         """
-        self.files = sorted(glob.glob(f"{folder_path}" + parsing))
+        self.files = sorted(
+            glob.glob(f"{folder_path}" + parsing),
+            key=lambda p: int(Path(p).stem) if Path(p).stem.isdigit() else p,
+        )
 
         self.transform = transform
         self.origDim = ori_dim

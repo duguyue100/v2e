@@ -99,7 +99,18 @@ class V2EConfig(BaseModel):
     @classmethod
     def from_args(cls, args: argparse.Namespace) -> "V2EConfig":
         """Construct config from parsed CLI arguments."""
-        # Simple extraction for now
-        config = cls()
-        # TODO: map actual arguments
-        return config
+        d = vars(args)
+        return cls(
+            dvs=DVSModelConfig(
+                **{k: d[k] for k in d if k in DVSModelConfig.model_fields}
+            ),
+            input=InputConfig(**{k: d[k] for k in d if k in InputConfig.model_fields}),
+            output=OutputConfig(
+                **{k: d[k] for k in d if k in OutputConfig.model_fields}
+            ),
+            slomo=SloMoConfig(**{k: d[k] for k in d if k in SloMoConfig.model_fields}),
+            renderer=RendererConfig(
+                **{k: d[k] for k in d if k in RendererConfig.model_fields}
+            ),
+            device=d.get("device", "cuda" if torch.cuda.is_available() else "cpu"),
+        )

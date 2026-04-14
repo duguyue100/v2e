@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class down(nn.Module):  # type: ignore
+class Down(nn.Module):  # type: ignore
     def __init__(self, inChannels: int, outChannels: int, filterSize: int) -> None:
         super().__init__()
         self.conv1 = nn.Conv2d(
@@ -31,7 +31,7 @@ class down(nn.Module):  # type: ignore
         return x
 
 
-class up(nn.Module):  # type: ignore
+class Up(nn.Module):  # type: ignore
     def __init__(self, inChannels: int, outChannels: int) -> None:
         super().__init__()
         self.conv1 = nn.Conv2d(inChannels, outChannels, 3, stride=1, padding=1)
@@ -49,16 +49,16 @@ class UNet(nn.Module):  # type: ignore
         super().__init__()
         self.conv1 = nn.Conv2d(inChannels, 32, 7, stride=1, padding=3)
         self.conv2 = nn.Conv2d(32, 32, 7, stride=1, padding=3)
-        self.down1 = down(32, 64, 5)
-        self.down2 = down(64, 128, 3)
-        self.down3 = down(128, 256, 3)
-        self.down4 = down(256, 512, 3)
-        self.down5 = down(512, 512, 3)
-        self.up1 = up(512, 512)
-        self.up2 = up(512, 256)
-        self.up3 = up(256, 128)
-        self.up4 = up(128, 64)
-        self.up5 = up(64, 32)
+        self.down1 = Down(32, 64, 5)
+        self.down2 = Down(64, 128, 3)
+        self.down3 = Down(128, 256, 3)
+        self.down4 = Down(256, 512, 3)
+        self.down5 = Down(512, 512, 3)
+        self.up1 = Up(512, 512)
+        self.up2 = Up(512, 256)
+        self.up3 = Up(256, 128)
+        self.up4 = Up(128, 64)
+        self.up5 = Up(64, 32)
         self.conv3 = nn.Conv2d(32, outChannels, 3, stride=1, padding=1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -78,7 +78,7 @@ class UNet(nn.Module):  # type: ignore
         return x
 
 
-class backWarp(nn.Module):  # type: ignore
+class BackWarp(nn.Module):  # type: ignore
     def __init__(self, W: int, H: int, device: Any) -> None:
         super().__init__()
         gridX, gridY = np.meshgrid(np.arange(W), np.arange(H))
