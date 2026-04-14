@@ -265,7 +265,7 @@ def video_writer(
     Returns:
         an instance of cv2.VideoWriter.
     """
-    fourcc_int = int(cv2.VideoWriter_fourcc(*fourcc))
+    fourcc_int = int(cv2.VideoWriter_fourcc(*fourcc))  # type: ignore
 
     out = cv2.VideoWriter(str(output_path), fourcc_int, frame_rate, (width, height))
     logger.info(

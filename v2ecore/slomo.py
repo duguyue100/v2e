@@ -521,7 +521,7 @@ class SuperSloMo:
                     ):
                         frame_path = Path(output_folder) / str(frame_idx) + ".png"  # type: ignore
                         frame = cv2.imread(frame_path)
-                        cv2.imshow(self.name, frame)
+                        cv2.imshow(self.name, frame)  # type: ignore
                         if not self.preview_resized:
                             cv2.resizeWindow(self.name, 800, 600)
                             self.preview_resized = True
@@ -604,7 +604,7 @@ class SuperSloMo:
                 np.ndarray
         """
         img = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
-        return img
+        return img  # type: ignore
 
     def get_interpolated_timestamps(
         self, ts: "np.ndarray[Any, Any]"
